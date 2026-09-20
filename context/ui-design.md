@@ -1,0 +1,305 @@
+# UI Design
+
+**Status:** Designed (2026-09-21). Not built — the app currently has only the Feature 1 page.
+**Artboards:** https://claude.ai/artifact/Lkg3pQwdwu91aycaZ3KeTL (private; share it from the page's Share menu if someone else needs it)
+
+This is the plan for the whole interface. It follows `project-overview.md` (what the app does),
+`architecture.md` (how it is put together) and `mock-data.md` (where every number comes from).
+
+---
+
+## 1. Information architecture
+
+A sidebar, because the app is two workflows and a set of data views, not one page.
+
+```text
+┌───────────────────┬─────────────────────────────────────────────────┐
+│ Price & Sales     │  Dashboard                    ● Gmail Connected │
+│ Copilot           │                                  [Scan Gmail]   │
+│                   ├─────────────────────────────────────────────────┤
+│ ▸ Dashboard       │                                                 │
+│ ▸ Price Updates ⑨ │   (page content)                                │
+│ ▸ Sales Copilot   │                                                 │
+│                   │                                                 │
+│ DATA              │                                                 │
+│ ▸ Products    30  │                                                 │
+│ ▸ Dealers     20  │                                                 │
+│ ▸ Sales      200  │                                                 │
+│                   │                                                 │
+│ ● Gmail connected │                                                 │
+│   Settings        │                                                 │
+└───────────────────┴─────────────────────────────────────────────────┘
+```
+
+| Route | Screen | Feature |
+|---|---|---|
+| `/` | Dashboard — KPIs, trend, brand split, recent price lists | reads all |
+| `/price-updates` | Every price list received, with status | 1 → 2 → 3 |
+| `/price-updates/[id]` | The 5-step workflow for one file | 1 → 2 → 3 |
+| `/copilot` | Question box and answers | 4 |
+| `/products`, `/dealers`, `/sales` | Read-only data views | — |
+| `/settings` | Gmail connection, disconnect, sender allowlist | 1 |
+
+**Sidebar rules.** The Price Updates badge counts items waiting on a person, and disappears at zero.
+Data rows carry a plain count. Gmail status and Settings sit in the footer — the `•••` menu from the brief is
+gone, since Disconnect belongs in Settings. Before Gmail is connected, Price Updates and Sales Copilot are
+visible but inert, so the shape of the app is legible from the first screen.
+
+### Workflow 1 — Price Updates (Features 1 → 2 → 3)
+
+One file moves through five steps, shown as a stepper across the top of the workflow page:
+
+```text
+① Received  →  ② Normalise  →  ③ Review & approve  →  ④ Affected dealers  →  ⑤ Draft email
+   Gmail         LLM            you decide              sales, last 90 days    LLM + Gmail draft
+```
+
+Steps 3 and 5 belong to a person. Each step names who acts, so it is never unclear whether the app or the
+model did something. Steps 4 and 5 unlock only after an approval.
+
+### Workflow 2 — Sales Copilot (Feature 4)
+
+A full page. The dashboard keeps a floating launcher that opens the same thing in a side panel for a quick
+question.
+
+---
+
+## 2. Screens
+
+### 2.1 Dashboard (`/`)
+
+Top to bottom: **what is happening** → **how are we selling** → **what arrived from suppliers**.
+
+**KPI row — four tiles.**
+
+| Tile | Value | Sub-line | Source |
+|---|---|---|---|
+| Total revenue | ₹43.9L | 66 invoices · 2 Jul – 18 Sep 2026 | Σ `quantity × unitPrice` |
+| Units sold | 910 | 28 of 30 products sold | Σ `quantity` |
+| Price changes | 5 | in 2 analysed files · 5 of the 9 below | comparison results |
+| **Needs review** | 9 | 5 price · 2 new · 2 missing — review | items awaiting a decision |
+
+The fourth tile is the only one with colour (amber ground, amber border): it is the one that asks for
+something. Its sub-line breaks the number down, which is what stops it reading as a duplicate of tile 3.
+
+**Charts.** Sales trend (2/3 width) and Sales by brand (1/3). Both name their measure and share one
+Revenue/Units toggle. Section 4 covers the chart rules.
+
+**New price lists.** The three most recent files, each with brand, filename, received time, change count and
+status, and a single action per row. "View all" goes to `/price-updates`. The brief's Refresh is gone, since
+Scan Gmail in the header does that job.
+
+**Copilot launcher.** Bottom right, opens the copilot panel. It never covers the price-list table's actions.
+
+### 2.2 Dashboard — first run
+
+The state you will demo from, so it is designed, not left to fall out of empty data.
+
+- A connect card at the top: what read-only access means, what the app looks for, and that you choose what
+  gets downloaded.
+- Revenue and Units still show real numbers at reduced emphasis — they come from the sales file and need no
+  Gmail. Price changes and Needs review show **—** on a dashed border, with "Needs a price list from Gmail".
+- The trend and brand charts render greyed, because the data exists.
+- The price-list section becomes an empty state, not an empty table.
+
+**Rule:** a number that cannot exist yet shows **—**, never 0. Zero is a fact; — is an absence.
+
+### 2.3 Scan results dialog (Feature 1)
+
+Opens from Scan Gmail. This is the step the original brief skipped, and it already exists in code.
+
+- One row per `.xlsx`/`.csv` attachment: checkbox, file, from, subject, size.
+- New rows arrive ticked. Rows already downloaded are unticked, disabled, and badged "already downloaded".
+- Footer states the rule — only `.xlsx` and `.csv` are listed — and the button counts: **Download selected (3)**.
+- Nothing is written until that button is pressed.
+
+### 2.4 Price Updates list (`/price-updates`)
+
+The stepper legend, then every file received with brand, filename, received time, changes and status.
+The change count is broken down inline ("3 price · 1 new · 1 missing") so the number means something.
+
+### 2.5 Workflow step 3 — Review & approve
+
+The heart of the app.
+
+- **Header:** breadcrumb, file name, status, received time and sender.
+- **Stepper:** steps 1–2 done, 3 current, 4–5 ahead.
+- **Summary strip:** rows in file, changes, unchanged — plus the sentence that matters:
+  *prices are copied from the file's cells by the app; the LLM only mapped this supplier's column names.*
+- **Tabs:** Price changes (3) · New products (1) · Missing products (1).
+- **Price changes table:** checkbox, product (with how it was matched — the T7 1TB row shows the supplier
+  called it "Portable SSD T7 1TB"), Product ID, dealer price old → new, MRP old → new, and a % delta.
+- **New products:** the generated Product ID is shown before approval, e.g. `SAM-1578F`, with "Generated from
+  brand + model, like every other ID".
+- **Missing products:** a Keep / Deactivate choice, defaulting to **Keep**, with the last-sold date and unit
+  count as evidence. The copy says plainly that nothing is deleted — Keep changes nothing, Deactivate marks
+  the product `status: "discontinued"` so it leaves the catalogue while its sales history still resolves.
+- **Footer:** what is selected, then one commit — **Approve 4 changes**. Disabled at zero.
+
+**Selection defaults.** Scan results arrive **ticked** (downloading a file is cheap and reversible — delete it).
+Approvals arrive **unticked** (writing a price is neither). That asymmetry is deliberate.
+
+**One commit, not two.** The brief had a per-row `[Approve]` button *and* a footer `[Approve Selected]`, which
+leaves it ambiguous whether the row button writes immediately. Checkboxes plus one commit matches the rule that
+nothing is written until you approve, and makes a partial approval ("these three, not that one") the normal case.
+
+### 2.6 Workflow steps 4–5 — Affected dealers & draft email
+
+- **Success banner:** what the approval actually did, in product terms.
+- **Affected dealers:** dealer, state, which repriced models they bought, units, last order date, with the
+  window stated — "between 20 Jun and 18 Sep 2026 (the last 90 days)".
+- **Draft panel:** To *me*; Bcc a single **13 dealers** pill with "hidden from each other"; subject; the
+  LLM-written body with the price table; then **Create Gmail draft** and a line saying nothing is sent.
+- A **Rewrite** button, because the first draft will not always be right.
+
+The LLM is given the changed products and prices only — never dealer names or addresses. The message is
+therefore general, and the app does the targeting.
+
+### 2.7 Sales Copilot (`/copilot`)
+
+Every answer has four parts, in this order:
+
+1. **Steps used to answer** — a collapsible block, open by default, listing the plan in plain sentences
+   ("Keep lines whose product has brand = Samsung — 10 of your 30 products, 55 lines").
+2. **The rows** — a small table.
+3. **The sentence** — which may only restate the computed numbers.
+4. **Copy table / Download CSV**, plus the standing line: every number was computed from your files.
+
+Suggested questions sit above the thread. The input is pinned at the bottom. A pending question shows
+"Working out the steps…", not a spinner alone.
+
+---
+
+## 3. States
+
+| State | Where | What is shown |
+|---|---|---|
+| Not connected | everywhere | Connect card; Price Updates and Copilot inert |
+| Connecting / consent | — | Browser is at Google; app shows nothing |
+| Connect failed | Dashboard | Alert with the reason from the callback |
+| Connected, no files | Price Updates | Empty state, Scan Gmail offered |
+| Scanning | Dialog | Button shows "Scanning…", table skeleton |
+| Scan found nothing | Dialog | "No price lists found" and what the search looks for |
+| Downloaded | list row | Status `Downloaded`, changes **—**, action **Analyse** |
+| Analysing | list row | Status `Analysing`, progress, action disabled |
+| Needs review | list row, badge | Status `Needs review`, action **Review** |
+| Approved | list row | Status `Approved`, breakdown of what was applied |
+| Partly approved | list row | `Approved` plus "3 of 5 applied" |
+| Failed | list row | Status `Failed` with the reason inline, action **Retry** |
+| Token expired | any API call | Alert: access expired, reconnect (7-day Testing-mode expiry) |
+| Nothing selected | Review footer | Summary reads "Nothing selected yet"; commit disabled |
+| Copilot thinking | Copilot | "Working out the steps…" |
+| Copilot cannot answer | Copilot | Says what it could not map, suggests a rephrase — never a guess |
+
+---
+
+## 4. Charts
+
+Both charts follow the validated palette; the three brand colours were checked for colour-vision separation
+against the card surface rather than picked by eye.
+
+| Concern | Decision |
+|---|---|
+| Trend granularity | **12 weekly buckets**, not 3 monthly points. Three points is not a trend |
+| Partial period | The last segment is **dashed** with a hollow marker and a footnote: the week of 14 Sep ends on the 18th |
+| Growth badges | Only against a like-for-like period, with the comparison named. No badge on a partial month |
+| Brand colours | Samsung `#2a78d6` · Seagate `#eb6834` · TP-Link `#1baf7a`, fixed per brand everywhere |
+| Measure | Named on every chart. Revenue and Units rank brands differently — by revenue Samsung ₹19.6L > Seagate ₹17.1L > TP-Link ₹7.2L; **by units TP-Link 326 > Seagate 324 > Samsung 260** |
+| Direct labels | Brand bars always carry their value, since the green sits just under 3:1 on white |
+| Axes | Recessive gridlines, one axis, no dual scales |
+
+Monthly figures, for reference: Jul ₹16.4L / 411 units · Aug ₹18.7L / 314 · Sep (to the 18th) ₹8.9L / 185.
+Plotted monthly without a marker, September looks like a collapse. That is the whole reason for the rule above.
+
+---
+
+## 5. Visual language
+
+| Token | Value | Use |
+|---|---|---|
+| Plane | `#F7F6F2` | Page ground (warm, not grey) |
+| Card | `#FFFFFF` | Panels |
+| Ink / primary | `#171613` | Text, primary buttons |
+| Ink 2 | `#56544D` | Secondary text |
+| Muted | `#8A877E` | Labels, captions |
+| Border | `#E5E3DB` | Card borders; `#F2F0E9` for table rules |
+
+No coloured brand accent in the chrome. Colour is reserved for data and status, so a red row means something.
+
+**Status** always pairs a dot or icon with a word — never colour alone:
+Downloaded (grey) · Analysing (blue) · Needs review (amber) · Approved (green) · Failed (red).
+Price deltas pair colour with an arrow: ↑ 7.1% on `#FBEAEA`/`#A62B2B`, ↓ 3.5% on `#E8F3E8`/`#1B5E20`.
+A supplier price rise is a cost rise, so up is red.
+
+**Type.** Newsreader for the wordmark and page titles; IBM Plex Sans for everything else;
+`tabular-nums` in every money column. Sizes: page title 22 · card title 14.5 · body 13 · caption 12 ·
+label 11 uppercase. Money is lakh on tiles (₹43.9L) and full in tables (₹7,500).
+
+**Layout.** 248px sidebar · 64px header · 28px page padding · 14px between cards · 12px card radius ·
+8px control radius · 36px default control height.
+
+---
+
+## 6. shadcn components
+
+Installed: `card`, `table`, `checkbox`, `badge`, `alert`, `button`.
+
+To add: `sidebar`, `dialog` (scan results), `sheet` (quick peek at changes), `tabs` (change types),
+`chart` (Recharts wrapper), `dropdown-menu` (filters), `skeleton` (loading rows), `sonner` (draft created),
+`tooltip`, `separator`.
+
+```bash
+bunx --bun shadcn@latest add sidebar dialog sheet tabs chart dropdown-menu skeleton sonner tooltip separator
+```
+
+The current install uses Base UI, not Radix, so `Checkbox` takes `onCheckedChange(checked: boolean)` — a plain
+boolean, not Radix's `boolean | "indeterminate"`.
+
+---
+
+## 7. Where every number comes from
+
+| Shown | Computed from |
+|---|---|
+| Total revenue, Units sold | `mock-data/sales/sales-data.json` |
+| 30 products, price columns | `mock-data/current-price-lists/current-price-list.json` |
+| Dealers, states, emails | `mock-data/dealers/dealers.json` |
+| Received / brand / subject per file | `mock-data/new-price-lists/manifest.json` (written by Feature 1 on the first download; absent until then) |
+| Changes, new, missing | Feature 2 comparison output |
+| Affected dealers | sales lines for the changed products, last 90 days from the latest invoice date |
+| "Today" | the latest invoice date, `2026-09-18` — never the wall clock |
+
+Regenerate the baseline with `bun run mock:generate --force`; check it with `--check`.
+
+---
+
+## 8. Decisions this design makes
+
+1. **Sidebar navigation**, because the app is two workflows plus data views.
+2. **A workflow page, not a drawer**, for the five steps. A drawer stays for a quick peek at changes from the
+   dashboard; approving and drafting happen on the page.
+3. **Analysis is explicit.** "Analyse" is a button. It costs an LLM call and sends supplier content to Gemini,
+   so it is not automatic.
+4. **Checkboxes plus one commit** for approvals; per-row approve buttons are gone.
+5. **Product IDs keep the real format** — `SAM-B072D`, not `SAM-011`. New products show their generated ID
+   before approval.
+6. **Missing products are kept or deactivated, never deleted.** Deleting would orphan sales history, which
+   references products by ID. Deactivating writes one **optional** field — `status: "discontinued"`, absent
+   meaning active — so the 30 existing records, the mock-data generator and the files on disk are all
+   unchanged, and "the current catalogue" is `!product.status`. This closes the `architecture.md` question
+   about what removing a missing product means; the reasoning is in its section 6.2.
+7. **Scan defaults to ticked, approval defaults to unticked.**
+8. **— rather than 0** for counts that cannot exist yet.
+9. **Charts always name their measure**, and a partial period is drawn as partial.
+
+## 9. Still open
+
+- One draft for all dealers, or one per group who bought the same models (the design shows one).
+- Whether the LLM writes the copilot's final sentence or a template does. Either way it may only restate
+  computed numbers.
+- Where the change history lives, and what the "View change history" link opens.
+- The 90-day window covers the whole sales file, so the filter cannot currently exclude anyone. Extending the
+  sales history back to ~May would make it testable.
+- Dark mode: tokens are chosen with it in mind, but no dark artboards exist yet.
+- Mobile: designed at 1440. The sidebar collapses to a sheet and tables scroll horizontally, but no phone
+  artboards exist yet.

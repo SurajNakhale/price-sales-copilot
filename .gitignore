@@ -32,6 +32,14 @@ yarn-error.log*
 
 # env files (can opt-in for committing if needed)
 .env*
+!.env.example
+
+# local runtime state (Google OAuth tokens)
+/.data/
+
+# price lists downloaded from Gmail (real supplier pricing stays out of git)
+mock-data/new-price-lists/*
+!mock-data/new-price-lists/.gitkeep
 
 # vercel
 .vercel

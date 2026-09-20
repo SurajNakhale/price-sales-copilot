@@ -1,0 +1,102 @@
+[
+  {
+    "dealer": "ABC Computers",
+    "state": "Maharashtra",
+    "email": "yourname+dealer1@gmail.com"
+  },
+  {
+    "dealer": "XYZ Electronics",
+    "state": "Gujarat",
+    "email": "yourname+dealer2@gmail.com"
+  },
+  {
+    "dealer": "Tech World",
+    "state": "Karnataka",
+    "email": "yourname+dealer3@gmail.com"
+  },
+  {
+    "dealer": "Sai Infotech",
+    "state": "Maharashtra",
+    "email": "yourname+dealer4@gmail.com"
+  },
+  {
+    "dealer": "Patel Digital Hub",
+    "state": "Gujarat",
+    "email": "yourname+dealer5@gmail.com"
+  },
+  {
+    "dealer": "Bengaluru Byte Store",
+    "state": "Karnataka",
+    "email": "yourname+dealer6@gmail.com"
+  },
+  {
+    "dealer": "Chennai Compu Care",
+    "state": "Tamil Nadu",
+    "email": "yourname+dealer7@gmail.com"
+  },
+  {
+    "dealer": "Madras Micro Systems",
+    "state": "Tamil Nadu",
+    "email": "yourname+dealer8@gmail.com"
+  },
+  {
+    "dealer": "Delhi Tech Mart",
+    "state": "Delhi",
+    "email": "yourname+dealer9@gmail.com"
+  },
+  {
+    "dealer": "Capital IT Solutions",
+    "state": "Delhi",
+    "email": "yourname+dealer10@gmail.com"
+  },
+  {
+    "dealer": "Hyderabad Hardware Hub",
+    "state": "Telangana",
+    "email": "yourname+dealer11@gmail.com"
+  },
+  {
+    "dealer": "Charminar Computers",
+    "state": "Telangana",
+    "email": "yourname+dealer12@gmail.com"
+  },
+  {
+    "dealer": "Kolkata Cyber Point",
+    "state": "West Bengal",
+    "email": "yourname+dealer13@gmail.com"
+  },
+  {
+    "dealer": "Jaipur Digital Zone",
+    "state": "Rajasthan",
+    "email": "yourname+dealer14@gmail.com"
+  },
+  {
+    "dealer": "Lucknow IT Bazaar",
+    "state": "Uttar Pradesh",
+    "email": "yourname+dealer15@gmail.com"
+  },
+  {
+    "dealer": "Kochi Compu Store",
+    "state": "Kerala",
+    "email": "yourname+dealer16@gmail.com"
+  },
+  {
+    "dealer": "Indore Infotech",
+    "state": "Madhya Pradesh",
+    "email": "yourname+dealer17@gmail.com"
+  },
+  {
+    "dealer": "Punjab Peripherals",
+    "state": "Punjab",
+    "email": "yourname+dealer18@gmail.com"
+  },
+  {
+    "dealer": "Pune Pixel Traders",
+    "state": "Maharashtra",
+    "email": "yourname+dealer19@gmail.com"
+  },
+  {
+    "dealer": "Ahmedabad Tech Depot",
+    "state": "Gujarat",
+    "email": "yourname+dealer20@gmail.com"
+  }
+]

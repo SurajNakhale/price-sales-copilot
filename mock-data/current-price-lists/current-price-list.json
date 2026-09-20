@@ -1,0 +1,242 @@
+[
+  {
+    "productId": "SEG-AF1A9",
+    "brand": "Seagate",
+    "model": "Barracuda 1TB",
+    "category": "HDD",
+    "dealerPrice": 3200,
+    "mrp": 4500
+  },
+  {
+    "productId": "SEG-C78E0",
+    "brand": "Seagate",
+    "model": "Barracuda 2TB",
+    "category": "HDD",
+    "dealerPrice": 4300,
+    "mrp": 5800
+  },
+  {
+    "productId": "SEG-3B757",
+    "brand": "Seagate",
+    "model": "Barracuda 4TB",
+    "category": "HDD",
+    "dealerPrice": 7200,
+    "mrp": 9400
+  },
+  {
+    "productId": "SEG-A7C3F",
+    "brand": "Seagate",
+    "model": "IronWolf 4TB",
+    "category": "HDD",
+    "dealerPrice": 8900,
+    "mrp": 11500
+  },
+  {
+    "productId": "SEG-661A8",
+    "brand": "Seagate",
+    "model": "SkyHawk 2TB",
+    "category": "HDD",
+    "dealerPrice": 4800,
+    "mrp": 6300
+  },
+  {
+    "productId": "SEG-C9EB8",
+    "brand": "Seagate",
+    "model": "Expansion Portable 1TB",
+    "category": "External HDD",
+    "dealerPrice": 3900,
+    "mrp": 5200
+  },
+  {
+    "productId": "SEG-30382",
+    "brand": "Seagate",
+    "model": "Expansion Portable 2TB",
+    "category": "External HDD",
+    "dealerPrice": 5600,
+    "mrp": 7400
+  },
+  {
+    "productId": "SEG-477B0",
+    "brand": "Seagate",
+    "model": "One Touch 2TB",
+    "category": "External HDD",
+    "dealerPrice": 6300,
+    "mrp": 8200
+  },
+  {
+    "productId": "SEG-B4DA0",
+    "brand": "Seagate",
+    "model": "Barracuda SSD 500GB",
+    "category": "SSD",
+    "dealerPrice": 3400,
+    "mrp": 4700
+  },
+  {
+    "productId": "SEG-6DB56",
+    "brand": "Seagate",
+    "model": "FireCuda 530 1TB",
+    "category": "SSD",
+    "dealerPrice": 11800,
+    "mrp": 15500
+  },
+  {
+    "productId": "SAM-B072D",
+    "brand": "Samsung",
+    "model": "T7 1TB",
+    "category": "SSD",
+    "dealerPrice": 7000,
+    "mrp": 9999
+  },
+  {
+    "productId": "SAM-F202D",
+    "brand": "Samsung",
+    "model": "T7 2TB",
+    "category": "SSD",
+    "dealerPrice": 12500,
+    "mrp": 16999
+  },
+  {
+    "productId": "SAM-4999E",
+    "brand": "Samsung",
+    "model": "T7 Shield 1TB",
+    "category": "SSD",
+    "dealerPrice": 8200,
+    "mrp": 11499
+  },
+  {
+    "productId": "SAM-BDAA4",
+    "brand": "Samsung",
+    "model": "870 EVO 500GB",
+    "category": "SSD",
+    "dealerPrice": 4300,
+    "mrp": 5999
+  },
+  {
+    "productId": "SAM-1808F",
+    "brand": "Samsung",
+    "model": "870 EVO 1TB",
+    "category": "SSD",
+    "dealerPrice": 6800,
+    "mrp": 9299
+  },
+  {
+    "productId": "SAM-72942",
+    "brand": "Samsung",
+    "model": "990 EVO 1TB",
+    "category": "SSD",
+    "dealerPrice": 7600,
+    "mrp": 10499
+  },
+  {
+    "productId": "SAM-BFB95",
+    "brand": "Samsung",
+    "model": "990 PRO 1TB",
+    "category": "SSD",
+    "dealerPrice": 11500,
+    "mrp": 15499
+  },
+  {
+    "productId": "SAM-6F25C",
+    "brand": "Samsung",
+    "model": "990 PRO 2TB",
+    "category": "SSD",
+    "dealerPrice": 19800,
+    "mrp": 25999
+  },
+  {
+    "productId": "SAM-A72BE",
+    "brand": "Samsung",
+    "model": "EVO Plus 128GB",
+    "category": "Memory Card",
+    "dealerPrice": 850,
+    "mrp": 1299
+  },
+  {
+    "productId": "SAM-6A9D9",
+    "brand": "Samsung",
+    "model": "EVO Plus 256GB",
+    "category": "Memory Card",
+    "dealerPrice": 1550,
+    "mrp": 2299
+  },
+  {
+    "productId": "TPL-A3F12",
+    "brand": "TP-Link",
+    "model": "Archer C6",
+    "category": "Router",
+    "dealerPrice": 2000,
+    "mrp": 2799
+  },
+  {
+    "productId": "TPL-22E74",
+    "brand": "TP-Link",
+    "model": "Archer C54",
+    "category": "Router",
+    "dealerPrice": 1500,
+    "mrp": 2199
+  },
+  {
+    "productId": "TPL-A54E2",
+    "brand": "TP-Link",
+    "model": "Archer AX23",
+    "category": "Router",
+    "dealerPrice": 2900,
+    "mrp": 4199
+  },
+  {
+    "productId": "TPL-653E4",
+    "brand": "TP-Link",
+    "model": "Archer AX55",
+    "category": "Router",
+    "dealerPrice": 4300,
+    "mrp": 6199
+  },
+  {
+    "productId": "TPL-166EB",
+    "brand": "TP-Link",
+    "model": "Archer AX73",
+    "category": "Router",
+    "dealerPrice": 7600,
+    "mrp": 10499
+  },
+  {
+    "productId": "TPL-42D07",
+    "brand": "TP-Link",
+    "model": "Archer C80",
+    "category": "Router",
+    "dealerPrice": 3100,
+    "mrp": 4399
+  },
+  {
+    "productId": "TPL-89AA1",
+    "brand": "TP-Link",
+    "model": "TL-WR841N",
+    "category": "Router",
+    "dealerPrice": 750,
+    "mrp": 1099
+  },
+  {
+    "productId": "TPL-0A14F",
+    "brand": "TP-Link",
+    "model": "RE305",
+    "category": "Range Extender",
+    "dealerPrice": 1600,
+    "mrp": 2299
+  },
+  {
+    "productId": "TPL-EB8CE",
+    "brand": "TP-Link",
+    "model": "TL-SG108",
+    "category": "Switch",
+    "dealerPrice": 1100,
+    "mrp": 1599
+  },
+  {
+    "productId": "TPL-9A86E",
+    "brand": "TP-Link",
+    "model": "TL-SG1016D",
+    "category": "Switch",
+    "dealerPrice": 3900,
+    "mrp": 5499
+  }
+]

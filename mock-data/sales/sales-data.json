@@ -1,0 +1,2002 @@
+[
+  {
+    "invoiceNo": "INV-2026-0001",
+    "date": "2026-07-02",
+    "dealer": "XYZ Electronics",
+    "state": "Gujarat",
+    "productId": "TPL-22E74",
+    "model": "Archer C54",
+    "quantity": 17,
+    "unitPrice": 1500
+  },
+  {
+    "invoiceNo": "INV-2026-0001",
+    "date": "2026-07-02",
+    "dealer": "XYZ Electronics",
+    "state": "Gujarat",
+    "productId": "SEG-C9EB8",
+    "model": "Expansion Portable 1TB",
+    "quantity": 8,
+    "unitPrice": 3810
+  },
+  {
+    "invoiceNo": "INV-2026-0002",
+    "date": "2026-07-02",
+    "dealer": "Chennai Compu Care",
+    "state": "Tamil Nadu",
+    "productId": "SEG-AF1A9",
+    "model": "Barracuda 1TB",
+    "quantity": 11,
+    "unitPrice": 3100
+  },
+  {
+    "invoiceNo": "INV-2026-0002",
+    "date": "2026-07-02",
+    "dealer": "Chennai Compu Care",
+    "state": "Tamil Nadu",
+    "productId": "SAM-BDAA4",
+    "model": "870 EVO 500GB",
+    "quantity": 2,
+    "unitPrice": 4300
+  },
+  {
+    "invoiceNo": "INV-2026-0002",
+    "date": "2026-07-02",
+    "dealer": "Chennai Compu Care",
+    "state": "Tamil Nadu",
+    "productId": "SAM-A72BE",
+    "model": "EVO Plus 128GB",
+    "quantity": 4,
+    "unitPrice": 850
+  },
+  {
+    "invoiceNo": "INV-2026-0003",
+    "date": "2026-07-04",
+    "dealer": "Delhi Tech Mart",
+    "state": "Delhi",
+    "productId": "SAM-6A9D9",
+    "model": "EVO Plus 256GB",
+    "quantity": 4,
+    "unitPrice": 1550
+  },
+  {
+    "invoiceNo": "INV-2026-0003",
+    "date": "2026-07-04",
+    "dealer": "Delhi Tech Mart",
+    "state": "Delhi",
+    "productId": "TPL-22E74",
+    "model": "Archer C54",
+    "quantity": 6,
+    "unitPrice": 1460
+  },
+  {
+    "invoiceNo": "INV-2026-0003",
+    "date": "2026-07-04",
+    "dealer": "Delhi Tech Mart",
+    "state": "Delhi",
+    "productId": "SEG-C9EB8",
+    "model": "Expansion Portable 1TB",
+    "quantity": 2,
+    "unitPrice": 3900
+  },
+  {
+    "invoiceNo": "INV-2026-0003",
+    "date": "2026-07-04",
+    "dealer": "Delhi Tech Mart",
+    "state": "Delhi",
+    "productId": "SAM-1808F",
+    "model": "870 EVO 1TB",
+    "quantity": 3,
+    "unitPrice": 6600
+  },
+  {
+    "invoiceNo": "INV-2026-0004",
+    "date": "2026-07-06",
+    "dealer": "Punjab Peripherals",
+    "state": "Punjab",
+    "productId": "SEG-C78E0",
+    "model": "Barracuda 2TB",
+    "quantity": 1,
+    "unitPrice": 4240
+  },
+  {
+    "invoiceNo": "INV-2026-0004",
+    "date": "2026-07-06",
+    "dealer": "Punjab Peripherals",
+    "state": "Punjab",
+    "productId": "TPL-A3F12",
+    "model": "Archer C6",
+    "quantity": 2,
+    "unitPrice": 2000
+  },
+  {
+    "invoiceNo": "INV-2026-0005",
+    "date": "2026-07-08",
+    "dealer": "Patel Digital Hub",
+    "state": "Gujarat",
+    "productId": "TPL-A3F12",
+    "model": "Archer C6",
+    "quantity": 11,
+    "unitPrice": 2000
+  },
+  {
+    "invoiceNo": "INV-2026-0005",
+    "date": "2026-07-08",
+    "dealer": "Patel Digital Hub",
+    "state": "Gujarat",
+    "productId": "SEG-661A8",
+    "model": "SkyHawk 2TB",
+    "quantity": 6,
+    "unitPrice": 4800
+  },
+  {
+    "invoiceNo": "INV-2026-0005",
+    "date": "2026-07-08",
+    "dealer": "Patel Digital Hub",
+    "state": "Gujarat",
+    "productId": "SEG-AF1A9",
+    "model": "Barracuda 1TB",
+    "quantity": 1,
+    "unitPrice": 3200
+  },
+  {
+    "invoiceNo": "INV-2026-0005",
+    "date": "2026-07-08",
+    "dealer": "Patel Digital Hub",
+    "state": "Gujarat",
+    "productId": "SEG-B4DA0",
+    "model": "Barracuda SSD 500GB",
+    "quantity": 2,
+    "unitPrice": 3400
+  },
+  {
+    "invoiceNo": "INV-2026-0006",
+    "date": "2026-07-10",
+    "dealer": "Ahmedabad Tech Depot",
+    "state": "Gujarat",
+    "productId": "SEG-B4DA0",
+    "model": "Barracuda SSD 500GB",
+    "quantity": 11,
+    "unitPrice": 3400
+  },
+  {
+    "invoiceNo": "INV-2026-0006",
+    "date": "2026-07-10",
+    "dealer": "Ahmedabad Tech Depot",
+    "state": "Gujarat",
+    "productId": "SEG-6DB56",
+    "model": "FireCuda 530 1TB",
+    "quantity": 2,
+    "unitPrice": 11550
+  },
+  {
+    "invoiceNo": "INV-2026-0007",
+    "date": "2026-07-10",
+    "dealer": "Delhi Tech Mart",
+    "state": "Delhi",
+    "productId": "SEG-30382",
+    "model": "Expansion Portable 2TB",
+    "quantity": 4,
+    "unitPrice": 5600
+  },
+  {
+    "invoiceNo": "INV-2026-0007",
+    "date": "2026-07-10",
+    "dealer": "Delhi Tech Mart",
+    "state": "Delhi",
+    "productId": "SEG-B4DA0",
+    "model": "Barracuda SSD 500GB",
+    "quantity": 4,
+    "unitPrice": 3400
+  },
+  {
+    "invoiceNo": "INV-2026-0008",
+    "date": "2026-07-10",
+    "dealer": "Delhi Tech Mart",
+    "state": "Delhi",
+    "productId": "SEG-B4DA0",
+    "model": "Barracuda SSD 500GB",
+    "quantity": 2,
+    "unitPrice": 3310
+  },
+  {
+    "invoiceNo": "INV-2026-0008",
+    "date": "2026-07-10",
+    "dealer": "Delhi Tech Mart",
+    "state": "Delhi",
+    "productId": "SEG-A7C3F",
+    "model": "IronWolf 4TB",
+    "quantity": 3,
+    "unitPrice": 8900
+  },
+  {
+    "invoiceNo": "INV-2026-0009",
+    "date": "2026-07-11",
+    "dealer": "Tech World",
+    "state": "Karnataka",
+    "productId": "TPL-A54E2",
+    "model": "Archer AX23",
+    "quantity": 3,
+    "unitPrice": 2900
+  },
+  {
+    "invoiceNo": "INV-2026-0010",
+    "date": "2026-07-11",
+    "dealer": "XYZ Electronics",
+    "state": "Gujarat",
+    "productId": "TPL-A3F12",
+    "model": "Archer C6",
+    "quantity": 8,
+    "unitPrice": 2000
+  },
+  {
+    "invoiceNo": "INV-2026-0010",
+    "date": "2026-07-11",
+    "dealer": "XYZ Electronics",
+    "state": "Gujarat",
+    "productId": "SEG-C78E0",
+    "model": "Barracuda 2TB",
+    "quantity": 6,
+    "unitPrice": 4300
+  },
+  {
+    "invoiceNo": "INV-2026-0010",
+    "date": "2026-07-11",
+    "dealer": "XYZ Electronics",
+    "state": "Gujarat",
+    "productId": "TPL-A54E2",
+    "model": "Archer AX23",
+    "quantity": 12,
+    "unitPrice": 2900
+  },
+  {
+    "invoiceNo": "INV-2026-0010",
+    "date": "2026-07-11",
+    "dealer": "XYZ Electronics",
+    "state": "Gujarat",
+    "productId": "SEG-C9EB8",
+    "model": "Expansion Portable 1TB",
+    "quantity": 1,
+    "unitPrice": 3900
+  },
+  {
+    "invoiceNo": "INV-2026-0011",
+    "date": "2026-07-11",
+    "dealer": "Delhi Tech Mart",
+    "state": "Delhi",
+    "productId": "TPL-89AA1",
+    "model": "TL-WR841N",
+    "quantity": 1,
+    "unitPrice": 750
+  },
+  {
+    "invoiceNo": "INV-2026-0011",
+    "date": "2026-07-11",
+    "dealer": "Delhi Tech Mart",
+    "state": "Delhi",
+    "productId": "TPL-A54E2",
+    "model": "Archer AX23",
+    "quantity": 10,
+    "unitPrice": 2900
+  },
+  {
+    "invoiceNo": "INV-2026-0011",
+    "date": "2026-07-11",
+    "dealer": "Delhi Tech Mart",
+    "state": "Delhi",
+    "productId": "TPL-0A14F",
+    "model": "RE305",
+    "quantity": 2,
+    "unitPrice": 1600
+  },
+  {
+    "invoiceNo": "INV-2026-0011",
+    "date": "2026-07-11",
+    "dealer": "Delhi Tech Mart",
+    "state": "Delhi",
+    "productId": "SEG-C9EB8",
+    "model": "Expansion Portable 1TB",
+    "quantity": 6,
+    "unitPrice": 3900
+  },
+  {
+    "invoiceNo": "INV-2026-0012",
+    "date": "2026-07-13",
+    "dealer": "ABC Computers",
+    "state": "Maharashtra",
+    "productId": "SEG-3B757",
+    "model": "Barracuda 4TB",
+    "quantity": 6,
+    "unitPrice": 6940
+  },
+  {
+    "invoiceNo": "INV-2026-0012",
+    "date": "2026-07-13",
+    "dealer": "ABC Computers",
+    "state": "Maharashtra",
+    "productId": "SEG-AF1A9",
+    "model": "Barracuda 1TB",
+    "quantity": 2,
+    "unitPrice": 3200
+  },
+  {
+    "invoiceNo": "INV-2026-0012",
+    "date": "2026-07-13",
+    "dealer": "ABC Computers",
+    "state": "Maharashtra",
+    "productId": "SAM-A72BE",
+    "model": "EVO Plus 128GB",
+    "quantity": 4,
+    "unitPrice": 850
+  },
+  {
+    "invoiceNo": "INV-2026-0012",
+    "date": "2026-07-13",
+    "dealer": "ABC Computers",
+    "state": "Maharashtra",
+    "productId": "SEG-C78E0",
+    "model": "Barracuda 2TB",
+    "quantity": 2,
+    "unitPrice": 4300
+  },
+  {
+    "invoiceNo": "INV-2026-0013",
+    "date": "2026-07-14",
+    "dealer": "Ahmedabad Tech Depot",
+    "state": "Gujarat",
+    "productId": "SEG-C78E0",
+    "model": "Barracuda 2TB",
+    "quantity": 2,
+    "unitPrice": 4300
+  },
+  {
+    "invoiceNo": "INV-2026-0013",
+    "date": "2026-07-14",
+    "dealer": "Ahmedabad Tech Depot",
+    "state": "Gujarat",
+    "productId": "TPL-A3F12",
+    "model": "Archer C6",
+    "quantity": 4,
+    "unitPrice": 2000
+  },
+  {
+    "invoiceNo": "INV-2026-0013",
+    "date": "2026-07-14",
+    "dealer": "Ahmedabad Tech Depot",
+    "state": "Gujarat",
+    "productId": "TPL-166EB",
+    "model": "Archer AX73",
+    "quantity": 1,
+    "unitPrice": 7600
+  },
+  {
+    "invoiceNo": "INV-2026-0014",
+    "date": "2026-07-15",
+    "dealer": "Charminar Computers",
+    "state": "Telangana",
+    "productId": "SEG-AF1A9",
+    "model": "Barracuda 1TB",
+    "quantity": 5,
+    "unitPrice": 3200
+  },
+  {
+    "invoiceNo": "INV-2026-0014",
+    "date": "2026-07-15",
+    "dealer": "Charminar Computers",
+    "state": "Telangana",
+    "productId": "SAM-72942",
+    "model": "990 EVO 1TB",
+    "quantity": 6,
+    "unitPrice": 7600
+  },
+  {
+    "invoiceNo": "INV-2026-0014",
+    "date": "2026-07-15",
+    "dealer": "Charminar Computers",
+    "state": "Telangana",
+    "productId": "SAM-6A9D9",
+    "model": "EVO Plus 256GB",
+    "quantity": 4,
+    "unitPrice": 1550
+  },
+  {
+    "invoiceNo": "INV-2026-0015",
+    "date": "2026-07-18",
+    "dealer": "XYZ Electronics",
+    "state": "Gujarat",
+    "productId": "SAM-F202D",
+    "model": "T7 2TB",
+    "quantity": 1,
+    "unitPrice": 11920
+  },
+  {
+    "invoiceNo": "INV-2026-0015",
+    "date": "2026-07-18",
+    "dealer": "XYZ Electronics",
+    "state": "Gujarat",
+    "productId": "TPL-EB8CE",
+    "model": "TL-SG108",
+    "quantity": 9,
+    "unitPrice": 1100
+  },
+  {
+    "invoiceNo": "INV-2026-0016",
+    "date": "2026-07-18",
+    "dealer": "XYZ Electronics",
+    "state": "Gujarat",
+    "productId": "TPL-89AA1",
+    "model": "TL-WR841N",
+    "quantity": 6,
+    "unitPrice": 750
+  },
+  {
+    "invoiceNo": "INV-2026-0016",
+    "date": "2026-07-18",
+    "dealer": "XYZ Electronics",
+    "state": "Gujarat",
+    "productId": "SAM-F202D",
+    "model": "T7 2TB",
+    "quantity": 8,
+    "unitPrice": 12500
+  },
+  {
+    "invoiceNo": "INV-2026-0016",
+    "date": "2026-07-18",
+    "dealer": "XYZ Electronics",
+    "state": "Gujarat",
+    "productId": "SEG-B4DA0",
+    "model": "Barracuda SSD 500GB",
+    "quantity": 1,
+    "unitPrice": 3400
+  },
+  {
+    "invoiceNo": "INV-2026-0016",
+    "date": "2026-07-18",
+    "dealer": "XYZ Electronics",
+    "state": "Gujarat",
+    "productId": "SEG-661A8",
+    "model": "SkyHawk 2TB",
+    "quantity": 10,
+    "unitPrice": 4560
+  },
+  {
+    "invoiceNo": "INV-2026-0017",
+    "date": "2026-07-20",
+    "dealer": "ABC Computers",
+    "state": "Maharashtra",
+    "productId": "SAM-6F25C",
+    "model": "990 PRO 2TB",
+    "quantity": 1,
+    "unitPrice": 19800
+  },
+  {
+    "invoiceNo": "INV-2026-0017",
+    "date": "2026-07-20",
+    "dealer": "ABC Computers",
+    "state": "Maharashtra",
+    "productId": "TPL-89AA1",
+    "model": "TL-WR841N",
+    "quantity": 10,
+    "unitPrice": 750
+  },
+  {
+    "invoiceNo": "INV-2026-0017",
+    "date": "2026-07-20",
+    "dealer": "ABC Computers",
+    "state": "Maharashtra",
+    "productId": "SAM-B072D",
+    "model": "T7 1TB",
+    "quantity": 7,
+    "unitPrice": 7000
+  },
+  {
+    "invoiceNo": "INV-2026-0018",
+    "date": "2026-07-21",
+    "dealer": "Chennai Compu Care",
+    "state": "Tamil Nadu",
+    "productId": "TPL-89AA1",
+    "model": "TL-WR841N",
+    "quantity": 3,
+    "unitPrice": 750
+  },
+  {
+    "invoiceNo": "INV-2026-0018",
+    "date": "2026-07-21",
+    "dealer": "Chennai Compu Care",
+    "state": "Tamil Nadu",
+    "productId": "TPL-A3F12",
+    "model": "Archer C6",
+    "quantity": 8,
+    "unitPrice": 2000
+  },
+  {
+    "invoiceNo": "INV-2026-0018",
+    "date": "2026-07-21",
+    "dealer": "Chennai Compu Care",
+    "state": "Tamil Nadu",
+    "productId": "SAM-BDAA4",
+    "model": "870 EVO 500GB",
+    "quantity": 2,
+    "unitPrice": 4300
+  },
+  {
+    "invoiceNo": "INV-2026-0018",
+    "date": "2026-07-21",
+    "dealer": "Chennai Compu Care",
+    "state": "Tamil Nadu",
+    "productId": "TPL-42D07",
+    "model": "Archer C80",
+    "quantity": 3,
+    "unitPrice": 3100
+  },
+  {
+    "invoiceNo": "INV-2026-0019",
+    "date": "2026-07-21",
+    "dealer": "Madras Micro Systems",
+    "state": "Tamil Nadu",
+    "productId": "TPL-89AA1",
+    "model": "TL-WR841N",
+    "quantity": 5,
+    "unitPrice": 750
+  },
+  {
+    "invoiceNo": "INV-2026-0019",
+    "date": "2026-07-21",
+    "dealer": "Madras Micro Systems",
+    "state": "Tamil Nadu",
+    "productId": "SEG-C78E0",
+    "model": "Barracuda 2TB",
+    "quantity": 9,
+    "unitPrice": 4300
+  },
+  {
+    "invoiceNo": "INV-2026-0019",
+    "date": "2026-07-21",
+    "dealer": "Madras Micro Systems",
+    "state": "Tamil Nadu",
+    "productId": "SAM-4999E",
+    "model": "T7 Shield 1TB",
+    "quantity": 9,
+    "unitPrice": 8200
+  },
+  {
+    "invoiceNo": "INV-2026-0019",
+    "date": "2026-07-21",
+    "dealer": "Madras Micro Systems",
+    "state": "Tamil Nadu",
+    "productId": "SEG-AF1A9",
+    "model": "Barracuda 1TB",
+    "quantity": 7,
+    "unitPrice": 3040
+  },
+  {
+    "invoiceNo": "INV-2026-0020",
+    "date": "2026-07-21",
+    "dealer": "Chennai Compu Care",
+    "state": "Tamil Nadu",
+    "productId": "SEG-661A8",
+    "model": "SkyHawk 2TB",
+    "quantity": 2,
+    "unitPrice": 4800
+  },
+  {
+    "invoiceNo": "INV-2026-0020",
+    "date": "2026-07-21",
+    "dealer": "Chennai Compu Care",
+    "state": "Tamil Nadu",
+    "productId": "SAM-B072D",
+    "model": "T7 1TB",
+    "quantity": 4,
+    "unitPrice": 6820
+  },
+  {
+    "invoiceNo": "INV-2026-0020",
+    "date": "2026-07-21",
+    "dealer": "Chennai Compu Care",
+    "state": "Tamil Nadu",
+    "productId": "TPL-EB8CE",
+    "model": "TL-SG108",
+    "quantity": 6,
+    "unitPrice": 1100
+  },
+  {
+    "invoiceNo": "INV-2026-0021",
+    "date": "2026-07-22",
+    "dealer": "Lucknow IT Bazaar",
+    "state": "Uttar Pradesh",
+    "productId": "SAM-B072D",
+    "model": "T7 1TB",
+    "quantity": 4,
+    "unitPrice": 7000
+  },
+  {
+    "invoiceNo": "INV-2026-0021",
+    "date": "2026-07-22",
+    "dealer": "Lucknow IT Bazaar",
+    "state": "Uttar Pradesh",
+    "productId": "TPL-A54E2",
+    "model": "Archer AX23",
+    "quantity": 1,
+    "unitPrice": 2900
+  },
+  {
+    "invoiceNo": "INV-2026-0021",
+    "date": "2026-07-22",
+    "dealer": "Lucknow IT Bazaar",
+    "state": "Uttar Pradesh",
+    "productId": "SEG-3B757",
+    "model": "Barracuda 4TB",
+    "quantity": 1,
+    "unitPrice": 6970
+  },
+  {
+    "invoiceNo": "INV-2026-0022",
+    "date": "2026-07-23",
+    "dealer": "Indore Infotech",
+    "state": "Madhya Pradesh",
+    "productId": "SEG-AF1A9",
+    "model": "Barracuda 1TB",
+    "quantity": 1,
+    "unitPrice": 3100
+  },
+  {
+    "invoiceNo": "INV-2026-0022",
+    "date": "2026-07-23",
+    "dealer": "Indore Infotech",
+    "state": "Madhya Pradesh",
+    "productId": "SEG-6DB56",
+    "model": "FireCuda 530 1TB",
+    "quantity": 5,
+    "unitPrice": 11290
+  },
+  {
+    "invoiceNo": "INV-2026-0023",
+    "date": "2026-07-27",
+    "dealer": "Lucknow IT Bazaar",
+    "state": "Uttar Pradesh",
+    "productId": "SEG-6DB56",
+    "model": "FireCuda 530 1TB",
+    "quantity": 8,
+    "unitPrice": 11800
+  },
+  {
+    "invoiceNo": "INV-2026-0023",
+    "date": "2026-07-27",
+    "dealer": "Lucknow IT Bazaar",
+    "state": "Uttar Pradesh",
+    "productId": "SAM-B072D",
+    "model": "T7 1TB",
+    "quantity": 2,
+    "unitPrice": 7000
+  },
+  {
+    "invoiceNo": "INV-2026-0023",
+    "date": "2026-07-27",
+    "dealer": "Lucknow IT Bazaar",
+    "state": "Uttar Pradesh",
+    "productId": "TPL-89AA1",
+    "model": "TL-WR841N",
+    "quantity": 5,
+    "unitPrice": 750
+  },
+  {
+    "invoiceNo": "INV-2026-0023",
+    "date": "2026-07-27",
+    "dealer": "Lucknow IT Bazaar",
+    "state": "Uttar Pradesh",
+    "productId": "SAM-72942",
+    "model": "990 EVO 1TB",
+    "quantity": 6,
+    "unitPrice": 7600
+  },
+  {
+    "invoiceNo": "INV-2026-0024",
+    "date": "2026-07-28",
+    "dealer": "XYZ Electronics",
+    "state": "Gujarat",
+    "productId": "SAM-B072D",
+    "model": "T7 1TB",
+    "quantity": 2,
+    "unitPrice": 7000
+  },
+  {
+    "invoiceNo": "INV-2026-0024",
+    "date": "2026-07-28",
+    "dealer": "XYZ Electronics",
+    "state": "Gujarat",
+    "productId": "TPL-A54E2",
+    "model": "Archer AX23",
+    "quantity": 3,
+    "unitPrice": 2900
+  },
+  {
+    "invoiceNo": "INV-2026-0024",
+    "date": "2026-07-28",
+    "dealer": "XYZ Electronics",
+    "state": "Gujarat",
+    "productId": "SEG-AF1A9",
+    "model": "Barracuda 1TB",
+    "quantity": 1,
+    "unitPrice": 3050
+  },
+  {
+    "invoiceNo": "INV-2026-0024",
+    "date": "2026-07-28",
+    "dealer": "XYZ Electronics",
+    "state": "Gujarat",
+    "productId": "SEG-B4DA0",
+    "model": "Barracuda SSD 500GB",
+    "quantity": 7,
+    "unitPrice": 3400
+  },
+  {
+    "invoiceNo": "INV-2026-0025",
+    "date": "2026-07-28",
+    "dealer": "Delhi Tech Mart",
+    "state": "Delhi",
+    "productId": "SAM-6A9D9",
+    "model": "EVO Plus 256GB",
+    "quantity": 5,
+    "unitPrice": 1550
+  },
+  {
+    "invoiceNo": "INV-2026-0025",
+    "date": "2026-07-28",
+    "dealer": "Delhi Tech Mart",
+    "state": "Delhi",
+    "productId": "SEG-C78E0",
+    "model": "Barracuda 2TB",
+    "quantity": 6,
+    "unitPrice": 4300
+  },
+  {
+    "invoiceNo": "INV-2026-0025",
+    "date": "2026-07-28",
+    "dealer": "Delhi Tech Mart",
+    "state": "Delhi",
+    "productId": "SAM-A72BE",
+    "model": "EVO Plus 128GB",
+    "quantity": 1,
+    "unitPrice": 850
+  },
+  {
+    "invoiceNo": "INV-2026-0026",
+    "date": "2026-07-30",
+    "dealer": "Pune Pixel Traders",
+    "state": "Maharashtra",
+    "productId": "SEG-AF1A9",
+    "model": "Barracuda 1TB",
+    "quantity": 4,
+    "unitPrice": 3200
+  },
+  {
+    "invoiceNo": "INV-2026-0026",
+    "date": "2026-07-30",
+    "dealer": "Pune Pixel Traders",
+    "state": "Maharashtra",
+    "productId": "SAM-4999E",
+    "model": "T7 Shield 1TB",
+    "quantity": 3,
+    "unitPrice": 8200
+  },
+  {
+    "invoiceNo": "INV-2026-0026",
+    "date": "2026-07-30",
+    "dealer": "Pune Pixel Traders",
+    "state": "Maharashtra",
+    "productId": "SAM-B072D",
+    "model": "T7 1TB",
+    "quantity": 1,
+    "unitPrice": 7000
+  },
+  {
+    "invoiceNo": "INV-2026-0027",
+    "date": "2026-07-30",
+    "dealer": "Capital IT Solutions",
+    "state": "Delhi",
+    "productId": "SEG-6DB56",
+    "model": "FireCuda 530 1TB",
+    "quantity": 6,
+    "unitPrice": 11800
+  },
+  {
+    "invoiceNo": "INV-2026-0027",
+    "date": "2026-07-30",
+    "dealer": "Capital IT Solutions",
+    "state": "Delhi",
+    "productId": "TPL-22E74",
+    "model": "Archer C54",
+    "quantity": 4,
+    "unitPrice": 1500
+  },
+  {
+    "invoiceNo": "INV-2026-0027",
+    "date": "2026-07-30",
+    "dealer": "Capital IT Solutions",
+    "state": "Delhi",
+    "productId": "TPL-A3F12",
+    "model": "Archer C6",
+    "quantity": 16,
+    "unitPrice": 2000
+  },
+  {
+    "invoiceNo": "INV-2026-0028",
+    "date": "2026-07-30",
+    "dealer": "Tech World",
+    "state": "Karnataka",
+    "productId": "TPL-A3F12",
+    "model": "Archer C6",
+    "quantity": 15,
+    "unitPrice": 2000
+  },
+  {
+    "invoiceNo": "INV-2026-0028",
+    "date": "2026-07-30",
+    "dealer": "Tech World",
+    "state": "Karnataka",
+    "productId": "SAM-6A9D9",
+    "model": "EVO Plus 256GB",
+    "quantity": 2,
+    "unitPrice": 1550
+  },
+  {
+    "invoiceNo": "INV-2026-0029",
+    "date": "2026-08-03",
+    "dealer": "Delhi Tech Mart",
+    "state": "Delhi",
+    "productId": "TPL-A3F12",
+    "model": "Archer C6",
+    "quantity": 6,
+    "unitPrice": 2000
+  },
+  {
+    "invoiceNo": "INV-2026-0029",
+    "date": "2026-08-03",
+    "dealer": "Delhi Tech Mart",
+    "state": "Delhi",
+    "productId": "SAM-BDAA4",
+    "model": "870 EVO 500GB",
+    "quantity": 6,
+    "unitPrice": 4300
+  },
+  {
+    "invoiceNo": "INV-2026-0029",
+    "date": "2026-08-03",
+    "dealer": "Delhi Tech Mart",
+    "state": "Delhi",
+    "productId": "SAM-6F25C",
+    "model": "990 PRO 2TB",
+    "quantity": 3,
+    "unitPrice": 19800
+  },
+  {
+    "invoiceNo": "INV-2026-0030",
+    "date": "2026-08-03",
+    "dealer": "Madras Micro Systems",
+    "state": "Tamil Nadu",
+    "productId": "SEG-AF1A9",
+    "model": "Barracuda 1TB",
+    "quantity": 15,
+    "unitPrice": 3200
+  },
+  {
+    "invoiceNo": "INV-2026-0030",
+    "date": "2026-08-03",
+    "dealer": "Madras Micro Systems",
+    "state": "Tamil Nadu",
+    "productId": "TPL-A3F12",
+    "model": "Archer C6",
+    "quantity": 3,
+    "unitPrice": 2000
+  },
+  {
+    "invoiceNo": "INV-2026-0031",
+    "date": "2026-08-06",
+    "dealer": "ABC Computers",
+    "state": "Maharashtra",
+    "productId": "SAM-72942",
+    "model": "990 EVO 1TB",
+    "quantity": 3,
+    "unitPrice": 7600
+  },
+  {
+    "invoiceNo": "INV-2026-0031",
+    "date": "2026-08-06",
+    "dealer": "ABC Computers",
+    "state": "Maharashtra",
+    "productId": "SEG-C9EB8",
+    "model": "Expansion Portable 1TB",
+    "quantity": 1,
+    "unitPrice": 3900
+  },
+  {
+    "invoiceNo": "INV-2026-0031",
+    "date": "2026-08-06",
+    "dealer": "ABC Computers",
+    "state": "Maharashtra",
+    "productId": "SEG-C78E0",
+    "model": "Barracuda 2TB",
+    "quantity": 7,
+    "unitPrice": 4300
+  },
+  {
+    "invoiceNo": "INV-2026-0031",
+    "date": "2026-08-06",
+    "dealer": "ABC Computers",
+    "state": "Maharashtra",
+    "productId": "SEG-661A8",
+    "model": "SkyHawk 2TB",
+    "quantity": 10,
+    "unitPrice": 4710
+  },
+  {
+    "invoiceNo": "INV-2026-0032",
+    "date": "2026-08-06",
+    "dealer": "XYZ Electronics",
+    "state": "Gujarat",
+    "productId": "SEG-C78E0",
+    "model": "Barracuda 2TB",
+    "quantity": 1,
+    "unitPrice": 4300
+  },
+  {
+    "invoiceNo": "INV-2026-0032",
+    "date": "2026-08-06",
+    "dealer": "XYZ Electronics",
+    "state": "Gujarat",
+    "productId": "TPL-653E4",
+    "model": "Archer AX55",
+    "quantity": 3,
+    "unitPrice": 4300
+  },
+  {
+    "invoiceNo": "INV-2026-0032",
+    "date": "2026-08-06",
+    "dealer": "XYZ Electronics",
+    "state": "Gujarat",
+    "productId": "TPL-42D07",
+    "model": "Archer C80",
+    "quantity": 3,
+    "unitPrice": 3100
+  },
+  {
+    "invoiceNo": "INV-2026-0032",
+    "date": "2026-08-06",
+    "dealer": "XYZ Electronics",
+    "state": "Gujarat",
+    "productId": "SAM-F202D",
+    "model": "T7 2TB",
+    "quantity": 1,
+    "unitPrice": 12500
+  },
+  {
+    "invoiceNo": "INV-2026-0033",
+    "date": "2026-08-06",
+    "dealer": "ABC Computers",
+    "state": "Maharashtra",
+    "productId": "TPL-A54E2",
+    "model": "Archer AX23",
+    "quantity": 2,
+    "unitPrice": 2860
+  },
+  {
+    "invoiceNo": "INV-2026-0033",
+    "date": "2026-08-06",
+    "dealer": "ABC Computers",
+    "state": "Maharashtra",
+    "productId": "SAM-4999E",
+    "model": "T7 Shield 1TB",
+    "quantity": 5,
+    "unitPrice": 8200
+  },
+  {
+    "invoiceNo": "INV-2026-0034",
+    "date": "2026-08-06",
+    "dealer": "Tech World",
+    "state": "Karnataka",
+    "productId": "TPL-A3F12",
+    "model": "Archer C6",
+    "quantity": 3,
+    "unitPrice": 1930
+  },
+  {
+    "invoiceNo": "INV-2026-0034",
+    "date": "2026-08-06",
+    "dealer": "Tech World",
+    "state": "Karnataka",
+    "productId": "SEG-C9EB8",
+    "model": "Expansion Portable 1TB",
+    "quantity": 1,
+    "unitPrice": 3900
+  },
+  {
+    "invoiceNo": "INV-2026-0034",
+    "date": "2026-08-06",
+    "dealer": "Tech World",
+    "state": "Karnataka",
+    "productId": "SAM-BFB95",
+    "model": "990 PRO 1TB",
+    "quantity": 8,
+    "unitPrice": 11500
+  },
+  {
+    "invoiceNo": "INV-2026-0034",
+    "date": "2026-08-06",
+    "dealer": "Tech World",
+    "state": "Karnataka",
+    "productId": "SEG-6DB56",
+    "model": "FireCuda 530 1TB",
+    "quantity": 8,
+    "unitPrice": 11800
+  },
+  {
+    "invoiceNo": "INV-2026-0035",
+    "date": "2026-08-07",
+    "dealer": "Kochi Compu Store",
+    "state": "Kerala",
+    "productId": "SEG-661A8",
+    "model": "SkyHawk 2TB",
+    "quantity": 2,
+    "unitPrice": 4800
+  },
+  {
+    "invoiceNo": "INV-2026-0035",
+    "date": "2026-08-07",
+    "dealer": "Kochi Compu Store",
+    "state": "Kerala",
+    "productId": "TPL-A54E2",
+    "model": "Archer AX23",
+    "quantity": 1,
+    "unitPrice": 2900
+  },
+  {
+    "invoiceNo": "INV-2026-0035",
+    "date": "2026-08-07",
+    "dealer": "Kochi Compu Store",
+    "state": "Kerala",
+    "productId": "SAM-BDAA4",
+    "model": "870 EVO 500GB",
+    "quantity": 6,
+    "unitPrice": 4150
+  },
+  {
+    "invoiceNo": "INV-2026-0036",
+    "date": "2026-08-07",
+    "dealer": "XYZ Electronics",
+    "state": "Gujarat",
+    "productId": "SAM-6A9D9",
+    "model": "EVO Plus 256GB",
+    "quantity": 6,
+    "unitPrice": 1550
+  },
+  {
+    "invoiceNo": "INV-2026-0036",
+    "date": "2026-08-07",
+    "dealer": "XYZ Electronics",
+    "state": "Gujarat",
+    "productId": "SEG-C78E0",
+    "model": "Barracuda 2TB",
+    "quantity": 3,
+    "unitPrice": 4300
+  },
+  {
+    "invoiceNo": "INV-2026-0037",
+    "date": "2026-08-10",
+    "dealer": "Patel Digital Hub",
+    "state": "Gujarat",
+    "productId": "SEG-C78E0",
+    "model": "Barracuda 2TB",
+    "quantity": 1,
+    "unitPrice": 4300
+  },
+  {
+    "invoiceNo": "INV-2026-0037",
+    "date": "2026-08-10",
+    "dealer": "Patel Digital Hub",
+    "state": "Gujarat",
+    "productId": "TPL-A3F12",
+    "model": "Archer C6",
+    "quantity": 7,
+    "unitPrice": 1940
+  },
+  {
+    "invoiceNo": "INV-2026-0037",
+    "date": "2026-08-10",
+    "dealer": "Patel Digital Hub",
+    "state": "Gujarat",
+    "productId": "SEG-C9EB8",
+    "model": "Expansion Portable 1TB",
+    "quantity": 1,
+    "unitPrice": 3900
+  },
+  {
+    "invoiceNo": "INV-2026-0037",
+    "date": "2026-08-10",
+    "dealer": "Patel Digital Hub",
+    "state": "Gujarat",
+    "productId": "TPL-166EB",
+    "model": "Archer AX73",
+    "quantity": 7,
+    "unitPrice": 7600
+  },
+  {
+    "invoiceNo": "INV-2026-0038",
+    "date": "2026-08-13",
+    "dealer": "Kolkata Cyber Point",
+    "state": "West Bengal",
+    "productId": "SAM-B072D",
+    "model": "T7 1TB",
+    "quantity": 6,
+    "unitPrice": 7000
+  },
+  {
+    "invoiceNo": "INV-2026-0038",
+    "date": "2026-08-13",
+    "dealer": "Kolkata Cyber Point",
+    "state": "West Bengal",
+    "productId": "SEG-3B757",
+    "model": "Barracuda 4TB",
+    "quantity": 11,
+    "unitPrice": 7200
+  },
+  {
+    "invoiceNo": "INV-2026-0038",
+    "date": "2026-08-13",
+    "dealer": "Kolkata Cyber Point",
+    "state": "West Bengal",
+    "productId": "SEG-AF1A9",
+    "model": "Barracuda 1TB",
+    "quantity": 2,
+    "unitPrice": 3200
+  },
+  {
+    "invoiceNo": "INV-2026-0038",
+    "date": "2026-08-13",
+    "dealer": "Kolkata Cyber Point",
+    "state": "West Bengal",
+    "productId": "SEG-661A8",
+    "model": "SkyHawk 2TB",
+    "quantity": 1,
+    "unitPrice": 4800
+  },
+  {
+    "invoiceNo": "INV-2026-0039",
+    "date": "2026-08-14",
+    "dealer": "Sai Infotech",
+    "state": "Maharashtra",
+    "productId": "SEG-B4DA0",
+    "model": "Barracuda SSD 500GB",
+    "quantity": 1,
+    "unitPrice": 3400
+  },
+  {
+    "invoiceNo": "INV-2026-0039",
+    "date": "2026-08-14",
+    "dealer": "Sai Infotech",
+    "state": "Maharashtra",
+    "productId": "SEG-C78E0",
+    "model": "Barracuda 2TB",
+    "quantity": 3,
+    "unitPrice": 4300
+  },
+  {
+    "invoiceNo": "INV-2026-0039",
+    "date": "2026-08-14",
+    "dealer": "Sai Infotech",
+    "state": "Maharashtra",
+    "productId": "TPL-EB8CE",
+    "model": "TL-SG108",
+    "quantity": 4,
+    "unitPrice": 1070
+  },
+  {
+    "invoiceNo": "INV-2026-0039",
+    "date": "2026-08-14",
+    "dealer": "Sai Infotech",
+    "state": "Maharashtra",
+    "productId": "SAM-72942",
+    "model": "990 EVO 1TB",
+    "quantity": 1,
+    "unitPrice": 7600
+  },
+  {
+    "invoiceNo": "INV-2026-0040",
+    "date": "2026-08-14",
+    "dealer": "Sai Infotech",
+    "state": "Maharashtra",
+    "productId": "TPL-A3F12",
+    "model": "Archer C6",
+    "quantity": 2,
+    "unitPrice": 2000
+  },
+  {
+    "invoiceNo": "INV-2026-0040",
+    "date": "2026-08-14",
+    "dealer": "Sai Infotech",
+    "state": "Maharashtra",
+    "productId": "SAM-4999E",
+    "model": "T7 Shield 1TB",
+    "quantity": 6,
+    "unitPrice": 8200
+  },
+  {
+    "invoiceNo": "INV-2026-0041",
+    "date": "2026-08-18",
+    "dealer": "Patel Digital Hub",
+    "state": "Gujarat",
+    "productId": "SEG-C78E0",
+    "model": "Barracuda 2TB",
+    "quantity": 4,
+    "unitPrice": 4300
+  },
+  {
+    "invoiceNo": "INV-2026-0041",
+    "date": "2026-08-18",
+    "dealer": "Patel Digital Hub",
+    "state": "Gujarat",
+    "productId": "SEG-C9EB8",
+    "model": "Expansion Portable 1TB",
+    "quantity": 8,
+    "unitPrice": 3900
+  },
+  {
+    "invoiceNo": "INV-2026-0041",
+    "date": "2026-08-18",
+    "dealer": "Patel Digital Hub",
+    "state": "Gujarat",
+    "productId": "TPL-A3F12",
+    "model": "Archer C6",
+    "quantity": 8,
+    "unitPrice": 2000
+  },
+  {
+    "invoiceNo": "INV-2026-0041",
+    "date": "2026-08-18",
+    "dealer": "Patel Digital Hub",
+    "state": "Gujarat",
+    "productId": "SEG-AF1A9",
+    "model": "Barracuda 1TB",
+    "quantity": 3,
+    "unitPrice": 3200
+  },
+  {
+    "invoiceNo": "INV-2026-0042",
+    "date": "2026-08-19",
+    "dealer": "Tech World",
+    "state": "Karnataka",
+    "productId": "SAM-6F25C",
+    "model": "990 PRO 2TB",
+    "quantity": 6,
+    "unitPrice": 19240
+  },
+  {
+    "invoiceNo": "INV-2026-0042",
+    "date": "2026-08-19",
+    "dealer": "Tech World",
+    "state": "Karnataka",
+    "productId": "SAM-A72BE",
+    "model": "EVO Plus 128GB",
+    "quantity": 3,
+    "unitPrice": 850
+  },
+  {
+    "invoiceNo": "INV-2026-0042",
+    "date": "2026-08-19",
+    "dealer": "Tech World",
+    "state": "Karnataka",
+    "productId": "SEG-AF1A9",
+    "model": "Barracuda 1TB",
+    "quantity": 6,
+    "unitPrice": 3200
+  },
+  {
+    "invoiceNo": "INV-2026-0042",
+    "date": "2026-08-19",
+    "dealer": "Tech World",
+    "state": "Karnataka",
+    "productId": "TPL-653E4",
+    "model": "Archer AX55",
+    "quantity": 3,
+    "unitPrice": 4300
+  },
+  {
+    "invoiceNo": "INV-2026-0043",
+    "date": "2026-08-19",
+    "dealer": "XYZ Electronics",
+    "state": "Gujarat",
+    "productId": "SEG-C78E0",
+    "model": "Barracuda 2TB",
+    "quantity": 9,
+    "unitPrice": 4300
+  },
+  {
+    "invoiceNo": "INV-2026-0043",
+    "date": "2026-08-19",
+    "dealer": "XYZ Electronics",
+    "state": "Gujarat",
+    "productId": "SAM-F202D",
+    "model": "T7 2TB",
+    "quantity": 4,
+    "unitPrice": 12500
+  },
+  {
+    "invoiceNo": "INV-2026-0043",
+    "date": "2026-08-19",
+    "dealer": "XYZ Electronics",
+    "state": "Gujarat",
+    "productId": "SEG-C9EB8",
+    "model": "Expansion Portable 1TB",
+    "quantity": 2,
+    "unitPrice": 3900
+  },
+  {
+    "invoiceNo": "INV-2026-0043",
+    "date": "2026-08-19",
+    "dealer": "XYZ Electronics",
+    "state": "Gujarat",
+    "productId": "TPL-89AA1",
+    "model": "TL-WR841N",
+    "quantity": 6,
+    "unitPrice": 730
+  },
+  {
+    "invoiceNo": "INV-2026-0044",
+    "date": "2026-08-19",
+    "dealer": "Hyderabad Hardware Hub",
+    "state": "Telangana",
+    "productId": "SAM-B072D",
+    "model": "T7 1TB",
+    "quantity": 3,
+    "unitPrice": 7000
+  },
+  {
+    "invoiceNo": "INV-2026-0044",
+    "date": "2026-08-19",
+    "dealer": "Hyderabad Hardware Hub",
+    "state": "Telangana",
+    "productId": "TPL-A54E2",
+    "model": "Archer AX23",
+    "quantity": 2,
+    "unitPrice": 2900
+  },
+  {
+    "invoiceNo": "INV-2026-0044",
+    "date": "2026-08-19",
+    "dealer": "Hyderabad Hardware Hub",
+    "state": "Telangana",
+    "productId": "TPL-0A14F",
+    "model": "RE305",
+    "quantity": 9,
+    "unitPrice": 1600
+  },
+  {
+    "invoiceNo": "INV-2026-0044",
+    "date": "2026-08-19",
+    "dealer": "Hyderabad Hardware Hub",
+    "state": "Telangana",
+    "productId": "TPL-22E74",
+    "model": "Archer C54",
+    "quantity": 7,
+    "unitPrice": 1500
+  },
+  {
+    "invoiceNo": "INV-2026-0045",
+    "date": "2026-08-21",
+    "dealer": "Tech World",
+    "state": "Karnataka",
+    "productId": "TPL-653E4",
+    "model": "Archer AX55",
+    "quantity": 1,
+    "unitPrice": 4190
+  },
+  {
+    "invoiceNo": "INV-2026-0045",
+    "date": "2026-08-21",
+    "dealer": "Tech World",
+    "state": "Karnataka",
+    "productId": "SEG-661A8",
+    "model": "SkyHawk 2TB",
+    "quantity": 2,
+    "unitPrice": 4800
+  },
+  {
+    "invoiceNo": "INV-2026-0045",
+    "date": "2026-08-21",
+    "dealer": "Tech World",
+    "state": "Karnataka",
+    "productId": "SAM-B072D",
+    "model": "T7 1TB",
+    "quantity": 12,
+    "unitPrice": 7000
+  },
+  {
+    "invoiceNo": "INV-2026-0045",
+    "date": "2026-08-21",
+    "dealer": "Tech World",
+    "state": "Karnataka",
+    "productId": "SEG-B4DA0",
+    "model": "Barracuda SSD 500GB",
+    "quantity": 1,
+    "unitPrice": 3400
+  },
+  {
+    "invoiceNo": "INV-2026-0046",
+    "date": "2026-08-22",
+    "dealer": "ABC Computers",
+    "state": "Maharashtra",
+    "productId": "SAM-6F25C",
+    "model": "990 PRO 2TB",
+    "quantity": 1,
+    "unitPrice": 19800
+  },
+  {
+    "invoiceNo": "INV-2026-0047",
+    "date": "2026-08-24",
+    "dealer": "Hyderabad Hardware Hub",
+    "state": "Telangana",
+    "productId": "SEG-6DB56",
+    "model": "FireCuda 530 1TB",
+    "quantity": 8,
+    "unitPrice": 11800
+  },
+  {
+    "invoiceNo": "INV-2026-0047",
+    "date": "2026-08-24",
+    "dealer": "Hyderabad Hardware Hub",
+    "state": "Telangana",
+    "productId": "SAM-72942",
+    "model": "990 EVO 1TB",
+    "quantity": 5,
+    "unitPrice": 7600
+  },
+  {
+    "invoiceNo": "INV-2026-0048",
+    "date": "2026-08-26",
+    "dealer": "XYZ Electronics",
+    "state": "Gujarat",
+    "productId": "SEG-3B757",
+    "model": "Barracuda 4TB",
+    "quantity": 3,
+    "unitPrice": 7200
+  },
+  {
+    "invoiceNo": "INV-2026-0048",
+    "date": "2026-08-26",
+    "dealer": "XYZ Electronics",
+    "state": "Gujarat",
+    "productId": "SAM-B072D",
+    "model": "T7 1TB",
+    "quantity": 3,
+    "unitPrice": 7000
+  },
+  {
+    "invoiceNo": "INV-2026-0048",
+    "date": "2026-08-26",
+    "dealer": "XYZ Electronics",
+    "state": "Gujarat",
+    "productId": "SAM-F202D",
+    "model": "T7 2TB",
+    "quantity": 8,
+    "unitPrice": 12500
+  },
+  {
+    "invoiceNo": "INV-2026-0048",
+    "date": "2026-08-26",
+    "dealer": "XYZ Electronics",
+    "state": "Gujarat",
+    "productId": "SAM-6F25C",
+    "model": "990 PRO 2TB",
+    "quantity": 6,
+    "unitPrice": 18970
+  },
+  {
+    "invoiceNo": "INV-2026-0049",
+    "date": "2026-08-27",
+    "dealer": "XYZ Electronics",
+    "state": "Gujarat",
+    "productId": "SEG-AF1A9",
+    "model": "Barracuda 1TB",
+    "quantity": 6,
+    "unitPrice": 3200
+  },
+  {
+    "invoiceNo": "INV-2026-0049",
+    "date": "2026-08-27",
+    "dealer": "XYZ Electronics",
+    "state": "Gujarat",
+    "productId": "TPL-A54E2",
+    "model": "Archer AX23",
+    "quantity": 6,
+    "unitPrice": 2900
+  },
+  {
+    "invoiceNo": "INV-2026-0050",
+    "date": "2026-08-31",
+    "dealer": "Delhi Tech Mart",
+    "state": "Delhi",
+    "productId": "SEG-C9EB8",
+    "model": "Expansion Portable 1TB",
+    "quantity": 2,
+    "unitPrice": 3900
+  },
+  {
+    "invoiceNo": "INV-2026-0050",
+    "date": "2026-08-31",
+    "dealer": "Delhi Tech Mart",
+    "state": "Delhi",
+    "productId": "SAM-B072D",
+    "model": "T7 1TB",
+    "quantity": 7,
+    "unitPrice": 7000
+  },
+  {
+    "invoiceNo": "INV-2026-0051",
+    "date": "2026-09-01",
+    "dealer": "Hyderabad Hardware Hub",
+    "state": "Telangana",
+    "productId": "TPL-166EB",
+    "model": "Archer AX73",
+    "quantity": 8,
+    "unitPrice": 7600
+  },
+  {
+    "invoiceNo": "INV-2026-0051",
+    "date": "2026-09-01",
+    "dealer": "Hyderabad Hardware Hub",
+    "state": "Telangana",
+    "productId": "TPL-A3F12",
+    "model": "Archer C6",
+    "quantity": 6,
+    "unitPrice": 2000
+  },
+  {
+    "invoiceNo": "INV-2026-0051",
+    "date": "2026-09-01",
+    "dealer": "Hyderabad Hardware Hub",
+    "state": "Telangana",
+    "productId": "TPL-A54E2",
+    "model": "Archer AX23",
+    "quantity": 8,
+    "unitPrice": 2900
+  },
+  {
+    "invoiceNo": "INV-2026-0052",
+    "date": "2026-09-03",
+    "dealer": "Charminar Computers",
+    "state": "Telangana",
+    "productId": "SEG-3B757",
+    "model": "Barracuda 4TB",
+    "quantity": 7,
+    "unitPrice": 7200
+  },
+  {
+    "invoiceNo": "INV-2026-0052",
+    "date": "2026-09-03",
+    "dealer": "Charminar Computers",
+    "state": "Telangana",
+    "productId": "SAM-72942",
+    "model": "990 EVO 1TB",
+    "quantity": 3,
+    "unitPrice": 7600
+  },
+  {
+    "invoiceNo": "INV-2026-0052",
+    "date": "2026-09-03",
+    "dealer": "Charminar Computers",
+    "state": "Telangana",
+    "productId": "SEG-A7C3F",
+    "model": "IronWolf 4TB",
+    "quantity": 6,
+    "unitPrice": 8600
+  },
+  {
+    "invoiceNo": "INV-2026-0053",
+    "date": "2026-09-04",
+    "dealer": "Delhi Tech Mart",
+    "state": "Delhi",
+    "productId": "SAM-BDAA4",
+    "model": "870 EVO 500GB",
+    "quantity": 1,
+    "unitPrice": 4300
+  },
+  {
+    "invoiceNo": "INV-2026-0053",
+    "date": "2026-09-04",
+    "dealer": "Delhi Tech Mart",
+    "state": "Delhi",
+    "productId": "SAM-B072D",
+    "model": "T7 1TB",
+    "quantity": 1,
+    "unitPrice": 6910
+  },
+  {
+    "invoiceNo": "INV-2026-0053",
+    "date": "2026-09-04",
+    "dealer": "Delhi Tech Mart",
+    "state": "Delhi",
+    "productId": "TPL-0A14F",
+    "model": "RE305",
+    "quantity": 15,
+    "unitPrice": 1600
+  },
+  {
+    "invoiceNo": "INV-2026-0053",
+    "date": "2026-09-04",
+    "dealer": "Delhi Tech Mart",
+    "state": "Delhi",
+    "productId": "TPL-A3F12",
+    "model": "Archer C6",
+    "quantity": 7,
+    "unitPrice": 2000
+  },
+  {
+    "invoiceNo": "INV-2026-0054",
+    "date": "2026-09-05",
+    "dealer": "Jaipur Digital Zone",
+    "state": "Rajasthan",
+    "productId": "SAM-BDAA4",
+    "model": "870 EVO 500GB",
+    "quantity": 4,
+    "unitPrice": 4300
+  },
+  {
+    "invoiceNo": "INV-2026-0054",
+    "date": "2026-09-05",
+    "dealer": "Jaipur Digital Zone",
+    "state": "Rajasthan",
+    "productId": "SAM-B072D",
+    "model": "T7 1TB",
+    "quantity": 1,
+    "unitPrice": 7000
+  },
+  {
+    "invoiceNo": "INV-2026-0054",
+    "date": "2026-09-05",
+    "dealer": "Jaipur Digital Zone",
+    "state": "Rajasthan",
+    "productId": "SEG-A7C3F",
+    "model": "IronWolf 4TB",
+    "quantity": 1,
+    "unitPrice": 8900
+  },
+  {
+    "invoiceNo": "INV-2026-0054",
+    "date": "2026-09-05",
+    "dealer": "Jaipur Digital Zone",
+    "state": "Rajasthan",
+    "productId": "TPL-42D07",
+    "model": "Archer C80",
+    "quantity": 5,
+    "unitPrice": 3100
+  },
+  {
+    "invoiceNo": "INV-2026-0055",
+    "date": "2026-09-07",
+    "dealer": "Kochi Compu Store",
+    "state": "Kerala",
+    "productId": "SAM-F202D",
+    "model": "T7 2TB",
+    "quantity": 1,
+    "unitPrice": 12200
+  },
+  {
+    "invoiceNo": "INV-2026-0055",
+    "date": "2026-09-07",
+    "dealer": "Kochi Compu Store",
+    "state": "Kerala",
+    "productId": "SAM-6A9D9",
+    "model": "EVO Plus 256GB",
+    "quantity": 4,
+    "unitPrice": 1550
+  },
+  {
+    "invoiceNo": "INV-2026-0055",
+    "date": "2026-09-07",
+    "dealer": "Kochi Compu Store",
+    "state": "Kerala",
+    "productId": "TPL-42D07",
+    "model": "Archer C80",
+    "quantity": 2,
+    "unitPrice": 3040
+  },
+  {
+    "invoiceNo": "INV-2026-0056",
+    "date": "2026-09-07",
+    "dealer": "Tech World",
+    "state": "Karnataka",
+    "productId": "SEG-3B757",
+    "model": "Barracuda 4TB",
+    "quantity": 1,
+    "unitPrice": 7200
+  },
+  {
+    "invoiceNo": "INV-2026-0056",
+    "date": "2026-09-07",
+    "dealer": "Tech World",
+    "state": "Karnataka",
+    "productId": "TPL-A54E2",
+    "model": "Archer AX23",
+    "quantity": 6,
+    "unitPrice": 2900
+  },
+  {
+    "invoiceNo": "INV-2026-0056",
+    "date": "2026-09-07",
+    "dealer": "Tech World",
+    "state": "Karnataka",
+    "productId": "TPL-0A14F",
+    "model": "RE305",
+    "quantity": 3,
+    "unitPrice": 1600
+  },
+  {
+    "invoiceNo": "INV-2026-0057",
+    "date": "2026-09-10",
+    "dealer": "Jaipur Digital Zone",
+    "state": "Rajasthan",
+    "productId": "SAM-A72BE",
+    "model": "EVO Plus 128GB",
+    "quantity": 3,
+    "unitPrice": 810
+  },
+  {
+    "invoiceNo": "INV-2026-0057",
+    "date": "2026-09-10",
+    "dealer": "Jaipur Digital Zone",
+    "state": "Rajasthan",
+    "productId": "SAM-6A9D9",
+    "model": "EVO Plus 256GB",
+    "quantity": 4,
+    "unitPrice": 1550
+  },
+  {
+    "invoiceNo": "INV-2026-0057",
+    "date": "2026-09-10",
+    "dealer": "Jaipur Digital Zone",
+    "state": "Rajasthan",
+    "productId": "TPL-A3F12",
+    "model": "Archer C6",
+    "quantity": 4,
+    "unitPrice": 1940
+  },
+  {
+    "invoiceNo": "INV-2026-0058",
+    "date": "2026-09-10",
+    "dealer": "Chennai Compu Care",
+    "state": "Tamil Nadu",
+    "productId": "SAM-F202D",
+    "model": "T7 2TB",
+    "quantity": 3,
+    "unitPrice": 12500
+  },
+  {
+    "invoiceNo": "INV-2026-0058",
+    "date": "2026-09-10",
+    "dealer": "Chennai Compu Care",
+    "state": "Tamil Nadu",
+    "productId": "SEG-B4DA0",
+    "model": "Barracuda SSD 500GB",
+    "quantity": 7,
+    "unitPrice": 3270
+  },
+  {
+    "invoiceNo": "INV-2026-0059",
+    "date": "2026-09-11",
+    "dealer": "Bengaluru Byte Store",
+    "state": "Karnataka",
+    "productId": "SEG-C9EB8",
+    "model": "Expansion Portable 1TB",
+    "quantity": 1,
+    "unitPrice": 3900
+  },
+  {
+    "invoiceNo": "INV-2026-0059",
+    "date": "2026-09-11",
+    "dealer": "Bengaluru Byte Store",
+    "state": "Karnataka",
+    "productId": "SEG-B4DA0",
+    "model": "Barracuda SSD 500GB",
+    "quantity": 2,
+    "unitPrice": 3400
+  },
+  {
+    "invoiceNo": "INV-2026-0059",
+    "date": "2026-09-11",
+    "dealer": "Bengaluru Byte Store",
+    "state": "Karnataka",
+    "productId": "SAM-A72BE",
+    "model": "EVO Plus 128GB",
+    "quantity": 2,
+    "unitPrice": 850
+  },
+  {
+    "invoiceNo": "INV-2026-0059",
+    "date": "2026-09-11",
+    "dealer": "Bengaluru Byte Store",
+    "state": "Karnataka",
+    "productId": "TPL-A3F12",
+    "model": "Archer C6",
+    "quantity": 3,
+    "unitPrice": 2000
+  },
+  {
+    "invoiceNo": "INV-2026-0060",
+    "date": "2026-09-11",
+    "dealer": "Patel Digital Hub",
+    "state": "Gujarat",
+    "productId": "SAM-BDAA4",
+    "model": "870 EVO 500GB",
+    "quantity": 9,
+    "unitPrice": 4230
+  },
+  {
+    "invoiceNo": "INV-2026-0060",
+    "date": "2026-09-11",
+    "dealer": "Patel Digital Hub",
+    "state": "Gujarat",
+    "productId": "SEG-C78E0",
+    "model": "Barracuda 2TB",
+    "quantity": 1,
+    "unitPrice": 4300
+  },
+  {
+    "invoiceNo": "INV-2026-0061",
+    "date": "2026-09-11",
+    "dealer": "Tech World",
+    "state": "Karnataka",
+    "productId": "SEG-6DB56",
+    "model": "FireCuda 530 1TB",
+    "quantity": 3,
+    "unitPrice": 11800
+  },
+  {
+    "invoiceNo": "INV-2026-0061",
+    "date": "2026-09-11",
+    "dealer": "Tech World",
+    "state": "Karnataka",
+    "productId": "SAM-BFB95",
+    "model": "990 PRO 1TB",
+    "quantity": 1,
+    "unitPrice": 11500
+  },
+  {
+    "invoiceNo": "INV-2026-0061",
+    "date": "2026-09-11",
+    "dealer": "Tech World",
+    "state": "Karnataka",
+    "productId": "SAM-BDAA4",
+    "model": "870 EVO 500GB",
+    "quantity": 2,
+    "unitPrice": 4100
+  },
+  {
+    "invoiceNo": "INV-2026-0062",
+    "date": "2026-09-17",
+    "dealer": "Sai Infotech",
+    "state": "Maharashtra",
+    "productId": "SAM-F202D",
+    "model": "T7 2TB",
+    "quantity": 8,
+    "unitPrice": 12500
+  },
+  {
+    "invoiceNo": "INV-2026-0062",
+    "date": "2026-09-17",
+    "dealer": "Sai Infotech",
+    "state": "Maharashtra",
+    "productId": "SAM-72942",
+    "model": "990 EVO 1TB",
+    "quantity": 11,
+    "unitPrice": 7600
+  },
+  {
+    "invoiceNo": "INV-2026-0063",
+    "date": "2026-09-17",
+    "dealer": "Delhi Tech Mart",
+    "state": "Delhi",
+    "productId": "TPL-89AA1",
+    "model": "TL-WR841N",
+    "quantity": 2,
+    "unitPrice": 750
+  },
+  {
+    "invoiceNo": "INV-2026-0063",
+    "date": "2026-09-17",
+    "dealer": "Delhi Tech Mart",
+    "state": "Delhi",
+    "productId": "SEG-AF1A9",
+    "model": "Barracuda 1TB",
+    "quantity": 1,
+    "unitPrice": 3200
+  },
+  {
+    "invoiceNo": "INV-2026-0064",
+    "date": "2026-09-18",
+    "dealer": "Charminar Computers",
+    "state": "Telangana",
+    "productId": "TPL-A3F12",
+    "model": "Archer C6",
+    "quantity": 2,
+    "unitPrice": 1950
+  },
+  {
+    "invoiceNo": "INV-2026-0064",
+    "date": "2026-09-18",
+    "dealer": "Charminar Computers",
+    "state": "Telangana",
+    "productId": "SAM-BFB95",
+    "model": "990 PRO 1TB",
+    "quantity": 3,
+    "unitPrice": 11500
+  },
+  {
+    "invoiceNo": "INV-2026-0064",
+    "date": "2026-09-18",
+    "dealer": "Charminar Computers",
+    "state": "Telangana",
+    "productId": "TPL-89AA1",
+    "model": "TL-WR841N",
+    "quantity": 1,
+    "unitPrice": 740
+  },
+  {
+    "invoiceNo": "INV-2026-0064",
+    "date": "2026-09-18",
+    "dealer": "Charminar Computers",
+    "state": "Telangana",
+    "productId": "SEG-C78E0",
+    "model": "Barracuda 2TB",
+    "quantity": 7,
+    "unitPrice": 4200
+  },
+  {
+    "invoiceNo": "INV-2026-0065",
+    "date": "2026-09-18",
+    "dealer": "Delhi Tech Mart",
+    "state": "Delhi",
+    "productId": "SEG-C78E0",
+    "model": "Barracuda 2TB",
+    "quantity": 8,
+    "unitPrice": 4300
+  },
+  {
+    "invoiceNo": "INV-2026-0065",
+    "date": "2026-09-18",
+    "dealer": "Delhi Tech Mart",
+    "state": "Delhi",
+    "productId": "SAM-BFB95",
+    "model": "990 PRO 1TB",
+    "quantity": 1,
+    "unitPrice": 11500
+  },
+  {
+    "invoiceNo": "INV-2026-0065",
+    "date": "2026-09-18",
+    "dealer": "Delhi Tech Mart",
+    "state": "Delhi",
+    "productId": "SAM-6A9D9",
+    "model": "EVO Plus 256GB",
+    "quantity": 2,
+    "unitPrice": 1550
+  },
+  {
+    "invoiceNo": "INV-2026-0065",
+    "date": "2026-09-18",
+    "dealer": "Delhi Tech Mart",
+    "state": "Delhi",
+    "productId": "SAM-B072D",
+    "model": "T7 1TB",
+    "quantity": 2,
+    "unitPrice": 7000
+  },
+  {
+    "invoiceNo": "INV-2026-0066",
+    "date": "2026-09-18",
+    "dealer": "Lucknow IT Bazaar",
+    "state": "Uttar Pradesh",
+    "productId": "SEG-AF1A9",
+    "model": "Barracuda 1TB",
+    "quantity": 2,
+    "unitPrice": 3200
+  }
+]
