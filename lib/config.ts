@@ -10,6 +10,16 @@ export const NEW_PRICE_LIST_DIR = path.join(
 );
 export const MANIFEST_FILE = path.join(NEW_PRICE_LIST_DIR, "manifest.json");
 
+/** The three datasets the app reads. Written only by scripts/generate-mock-data.ts. */
+export const PRODUCTS_FILE = path.join(
+  process.cwd(),
+  "mock-data",
+  "current-price-lists",
+  "current-price-list.json",
+);
+export const DEALERS_FILE = path.join(process.cwd(), "mock-data", "dealers", "dealers.json");
+export const SALES_FILE = path.join(process.cwd(), "mock-data", "sales", "sales-data.json");
+
 /** Gitignored runtime state. */
 export const DATA_DIR = path.join(process.cwd(), ".data");
 export const TOKEN_FILE = path.join(DATA_DIR, "google-tokens.json");

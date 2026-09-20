@@ -1,39 +1,89 @@
-import { IngestPanel } from "@/app/_components/IngestPanel";
+import Link from "next/link";
+import { Sparkles } from "lucide-react";
+
+import { KpiCards, buildKpis } from "@/app/_components/KpiCards";
+import { PageHeader } from "@/app/_components/PageHeader";
+import { PriceListsCard } from "@/app/_components/PriceListsCard";
+import { SalesCharts } from "@/app/_components/SalesCharts";
+import { ScanDialog } from "@/app/_components/ScanDialog";
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
+import { Button } from "@/components/ui/button";
+import {
+  brandTotals,
+  earliestInvoiceDate,
+  invoiceCount,
+  latestInvoiceDate,
+  totalRevenue,
+  totalUnits,
+  weeklyBuckets,
+} from "@/lib/analytics";
+import { readProducts, readSales } from "@/lib/data/mock-data";
 import { isConnected } from "@/lib/google/oauth";
 import { readManifest } from "@/lib/storage/new-price-lists";
 
-// Connection state and the manifest are read from disk on every request.
+// Connection state, the manifest and the datasets are read from disk on every
+// request.
 export const dynamic = "force-dynamic";
 
-export default async function Home({ searchParams }: PageProps<"/">) {
-  const [connected, manifest, params] = await Promise.all([
+export default async function Dashboard({ searchParams }: PageProps<"/">) {
+  const [connected, manifest, products, sales, params] = await Promise.all([
     isConnected(),
     readManifest(),
+    readProducts(),
+    readSales(),
     searchParams,
   ]);
 
-  const connectError = typeof params.connect_error === "string" ? params.connect_error : undefined;
+  const connectError =
+    typeof params.connect_error === "string" ? params.connect_error : undefined;
 
-  const saved = [...manifest]
-    .sort((a, b) => b.downloadedAt.localeCompare(a.downloadedAt))
-    .map((entry) => ({
-      savedAs: entry.savedAs,
-      from: entry.from,
-      subject: entry.subject,
-      emailDate: entry.emailDate,
-    }));
+  const kpis = buildKpis({
+    revenue: totalRevenue(sales),
+    units: totalUnits(sales),
+    invoices: invoiceCount(sales),
+    productsSold: new Set(sales.map((line) => line.productId)).size,
+    productsTotal: products.length,
+    from: earliestInvoiceDate(sales),
+    to: latestInvoiceDate(sales),
+    // Both come from Feature 2, which does not exist yet.
+    priceChanges: null,
+    needsReview: null,
+  });
 
   return (
-    <div className="mx-auto w-full max-w-5xl flex-1 px-4 py-10 sm:px-6">
-      <header className="mb-8">
-        <h1 className="text-2xl font-semibold tracking-tight">Price &amp; Sales Copilot</h1>
-        <p className="mt-1 text-sm text-muted-foreground">
-          Feature 1 — read price lists from Gmail and save the raw files to{" "}
-          <code className="rounded bg-muted px-1 py-0.5 text-xs">mock-data/new-price-lists/</code>.
-        </p>
-      </header>
+    <>
+      <PageHeader
+        title="Dashboard"
+        description="Supplier pricing and sales intelligence"
+        actions={<ScanDialog connected={connected} />}
+      />
 
-      <IngestPanel connected={connected} saved={saved} connectError={connectError} />
-    </div>
+      <div className="flex flex-col gap-3.5 p-7">
+        {connectError ? (
+          <Alert variant="destructive">
+            <AlertTitle>Gmail could not be connected</AlertTitle>
+            <AlertDescription>{connectError}</AlertDescription>
+          </Alert>
+        ) : null}
+
+        <KpiCards items={kpis} />
+
+        <SalesCharts
+          weeks={weeklyBuckets(sales)}
+          brands={brandTotals(sales, products)}
+        />
+
+        <PriceListsCard entries={manifest} connected={connected} limit={5} />
+      </div>
+
+      <Button
+        size="lg"
+        className="fixed right-6 bottom-6 h-11 gap-2 rounded-full px-4 shadow-lg"
+        render={<Link href="/copilot" />}
+      >
+        <Sparkles />
+        Sales Copilot
+      </Button>
+    </>
   );
 }

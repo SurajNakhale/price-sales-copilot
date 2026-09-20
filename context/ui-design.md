@@ -1,6 +1,8 @@
 # UI Design
 
-**Status:** Designed (2026-09-21). Not built — the app currently has only the Feature 1 page.
+**Status:** Partly built (2026-09-21). The shell, dashboard, data views, Settings and the Feature 1
+scan dialog exist. The Price Updates workflow and the Sales Copilot are placeholder pages until
+Features 2–4 are written. See `current-state.md`.
 **Artboards:** https://claude.ai/artifact/Lkg3pQwdwu91aycaZ3KeTL (private; share it from the page's Share menu if someone else needs it)
 
 This is the plan for the whole interface. It follows `project-overview.md` (what the app does),
@@ -201,7 +203,7 @@ against the card surface rather than picked by eye.
 | Concern | Decision |
 |---|---|
 | Trend granularity | **12 weekly buckets**, not 3 monthly points. Three points is not a trend |
-| Partial period | The last segment is **dashed** with a hollow marker and a footnote: the week of 14 Sep ends on the 18th |
+| Partial period | **Both ends** are dashed with a hollow marker and a footnote. The first week opens on 29 Jun but sales start on 2 Jul; the last opens on 14 Sep and sales stop on the 18th. Only the last was noted when this was designed |
 | Growth badges | Only against a like-for-like period, with the comparison named. No badge on a partial month |
 | Brand colours | Samsung `#2a78d6` · Seagate `#eb6834` · TP-Link `#1baf7a`, fixed per brand everywhere |
 | Measure | Named on every chart. Revenue and Units rank brands differently — by revenue Samsung ₹19.6L > Seagate ₹17.1L > TP-Link ₹7.2L; **by units TP-Link 326 > Seagate 324 > Samsung 260** |
@@ -242,18 +244,24 @@ label 11 uppercase. Money is lakh on tiles (₹43.9L) and full in tables (₹7,5
 
 ## 6. shadcn components
 
-Installed: `card`, `table`, `checkbox`, `badge`, `alert`, `button`.
+Installed: `alert`, `badge`, `button`, `card`, `chart`, `checkbox`, `dialog`, `input`, `separator`,
+`sheet`, `sidebar`, `skeleton`, `table`, `tooltip`. Adding `sidebar` brought `sheet`, `input` and
+`skeleton` with it; `chart` brought `recharts`.
 
-To add: `sidebar`, `dialog` (scan results), `sheet` (quick peek at changes), `tabs` (change types),
-`chart` (Recharts wrapper), `dropdown-menu` (filters), `skeleton` (loading rows), `sonner` (draft created),
-`tooltip`, `separator`.
+Still to add, when the feature that needs them is built: `tabs` (the three change types, Feature 2),
+`dropdown-menu` (filters), `sonner` (draft-created toast, Feature 3).
 
 ```bash
-bunx --bun shadcn@latest add sidebar dialog sheet tabs chart dropdown-menu skeleton sonner tooltip separator
+bunx --bun shadcn@latest add tabs dropdown-menu sonner
 ```
 
-The current install uses Base UI, not Radix, so `Checkbox` takes `onCheckedChange(checked: boolean)` — a plain
-boolean, not Radix's `boolean | "indeterminate"`.
+The install uses Base UI, not Radix, which changes two things in practice: `Checkbox` takes
+`onCheckedChange(checked: boolean)` — a plain boolean, not Radix's `boolean | "indeterminate"`, with
+`indeterminate` as its own prop — and composition uses `render={<Link href="…" />}` rather than
+`asChild`.
+
+`hooks/use-mobile.ts` was rewritten after generation: the generated version set state inside an
+effect, which fails `react-hooks/set-state-in-effect`. It now uses `useSyncExternalStore`.
 
 ---
 
@@ -264,7 +272,7 @@ boolean, not Radix's `boolean | "indeterminate"`.
 | Total revenue, Units sold | `mock-data/sales/sales-data.json` |
 | 30 products, price columns | `mock-data/current-price-lists/current-price-list.json` |
 | Dealers, states, emails | `mock-data/dealers/dealers.json` |
-| Received / brand / subject per file | `mock-data/new-price-lists/manifest.json` (written by Feature 1 on the first download; absent until then) |
+| Received / sender / filename per file | `mock-data/new-price-lists/manifest.json` (written by Feature 1 on the first download; absent until then). It records **no brand**, so that column shows `—` until Feature 2 normalises the file |
 | Changes, new, missing | Feature 2 comparison output |
 | Affected dealers | sales lines for the changed products, last 90 days from the latest invoice date |
 | "Today" | the latest invoice date, `2026-09-18` — never the wall clock |
@@ -300,6 +308,9 @@ Regenerate the baseline with `bun run mock:generate --force`; check it with `--c
 - Where the change history lives, and what the "View change history" link opens.
 - The 90-day window covers the whole sales file, so the filter cannot currently exclude anyone. Extending the
   sales history back to ~May would make it testable.
-- Dark mode: tokens are chosen with it in mind, but no dark artboards exist yet.
+- Dark mode: tokens are chosen with it in mind, but `.dark` in `app/globals.css` is still the stock
+  neutral grey, and no dark artboards exist yet.
 - Mobile: designed at 1440. The sidebar collapses to a sheet and tables scroll horizontally, but no phone
   artboards exist yet.
+- The brand column on the price-list table needs a brand on `ManifestEntry`, or a guess from the sender
+  and filename, if it is to show anything before Feature 2 runs.

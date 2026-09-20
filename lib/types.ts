@@ -1,3 +1,42 @@
+/** The three brands in the catalogue. */
+export type Brand = "Seagate" | "Samsung" | "TP-Link";
+
+/**
+ * One row of mock-data/current-price-lists/current-price-list.json.
+ * `status` is absent on an active product, so presence in the file means
+ * "we stock this". See context/architecture.md section 6.2.
+ */
+export interface Product {
+  productId: string;
+  brand: Brand;
+  model: string;
+  category: string;
+  dealerPrice: number;
+  mrp: number;
+  status?: "discontinued";
+  /** ISO date, set when the deactivation was approved. */
+  discontinuedOn?: string;
+}
+
+/** One row of mock-data/dealers/dealers.json. */
+export interface Dealer {
+  dealer: string;
+  state: string;
+  email: string;
+}
+
+/** One invoice line of mock-data/sales/sales-data.json. `unitPrice` is per unit. */
+export interface SalesLine {
+  invoiceNo: string;
+  date: string;
+  dealer: string;
+  state: string;
+  productId: string;
+  model: string;
+  quantity: number;
+  unitPrice: number;
+}
+
 /** One downloaded attachment, recorded in mock-data/new-price-lists/manifest.json. */
 export interface ManifestEntry {
   /** Gmail message id. With partId this is the dedup key. */
