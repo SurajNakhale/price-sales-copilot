@@ -108,6 +108,7 @@ export interface ApiError {
     | "unusable_file"
     | "invalid_llm_output"
     | "llm_unavailable"
+    | "gmail_scope_missing"
     | "internal";
   message: string;
 }

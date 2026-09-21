@@ -1,8 +1,8 @@
 import "server-only";
 
-import { InvalidLlmOutputError, LlmUnavailableError } from "@/lib/errors";
+import { InvalidLlmOutputError } from "@/lib/errors";
 
-import { getClient, llmModel } from "./client";
+import { getClient, llmModel, mapGeminiError } from "./client";
 import type { ChatFunctionCall, ChatPort, ChatStep, ChatTurnRequest, ChatTurnResult } from "./port";
 import { toGeminiSchema } from "./schemas";
 
@@ -90,31 +90,8 @@ export function parseInteraction(raw: unknown): ChatTurnResult {
   };
 }
 
-/** Rate limits and outages become LlmUnavailableError (503); anything else is rethrown. */
-export function mapGeminiError(error: unknown): unknown {
-  const status = (error as { status?: unknown })?.status;
-  const detail = error instanceof Error ? error.message : String((error as { message?: unknown })?.message ?? "");
-  if (status === 429 && /per day/i.test(detail)) {
-    // Waiting a minute does not help here; say what does. Seen live: the free tier allows
-    // gemini-3.8-flash 20 requests a day, and each question uses two or three.
-    const limit = /limit: ([^)]+)\)/i.exec(detail)?.[1];
-    return new LlmUnavailableError(
-      `The Gemini key has used up its daily request limit${limit ? ` (${limit})` : ""}. It resets daily; ` +
-        "a paid-tier key, or another model set in COPILOT_MODEL or LLM_MODEL, avoids it.",
-    );
-  }
-  if (status === 429) {
-    return new LlmUnavailableError("Gemini is rate-limiting requests right now. Wait a minute and ask again.");
-  }
-  if (typeof status === "number" && status >= 500) {
-    return new LlmUnavailableError(`Gemini is unavailable right now (status ${status}). Try again shortly.`);
-  }
-  const message = error instanceof Error ? error.message : "";
-  if (error instanceof TypeError && /fetch|network|ECONN|ENOTFOUND/i.test(message)) {
-    return new LlmUnavailableError("Could not reach Gemini. Check the internet connection and try again.");
-  }
-  return error;
-}
+// Kept here as well as in client.ts, where it now lives, because the copilot's tests import it from this module.
+export { mapGeminiError };
 
 export function createGeminiChat(
   options: { client?: () => InteractionsClient; model?: () => string } = {},

@@ -1,7 +1,6 @@
 # Architecture
 
-**Status:** Features 1, 2 and 4 built (2026-09-21), each specified in detail in `features/`. Feature 3 is designed here
-at module level and gets its own spec when it is built. Items marked "proposed" are not settled yet (see section 12).
+**Status:** All four features built (2026-09-21), each specified in detail in `features/`. Items marked "proposed" are not settled yet (see section 12).
 
 ## 1. Overview
 
@@ -55,14 +54,15 @@ Deterministic core      lib/llm          lib/google +        lib/storage
   It is **not** designed for serverless hosting (read-only or ephemeral filesystem) or multi-user use. There is no per-user
   separation: whoever can reach the server can use it, so it runs on localhost.
 - Secrets live in `.env.local` (Next.js also loads `.env`); both are gitignored:
-  `GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_SECRET`, `GOOGLE_REDIRECT_URI`, `GEMINI_API_KEY`, `LLM_MODEL`.
+  `GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_SECRET`, `GOOGLE_REDIRECT_URI`, `GEMINI_API_KEY`, `LLM_MODEL`, and per feature
+  `ANALYSE_MODEL`, `COPILOT_MODEL`, `DRAFT_MODEL`.
 - Server-only modules (Gmail, LLM, storage, config) start with `import 'server-only'`, so they can never be bundled into
   the browser. Nothing secret uses a `NEXT_PUBLIC_` name.
 - Package manager: bun.
 
 ## 4. Layers and code layout
 
-Features 1, 2 and 4 are laid out as built; Feature 3 is proposed. File names are exactly those of the feature specs.
+All four features are laid out as built. File names are exactly those of the feature specs.
 
 ```text
 app/
@@ -74,7 +74,7 @@ app/
     auth/google/                    connect, callback, disconnect            (Feature 1)
     ingest/scan, ingest/download    scan Gmail, download selected            (Feature 1)
     prices/[id]/analyse, approve    normalise + compare, approve             (Feature 2)
-    drafts/                         create the Gmail draft                    (Feature 3)
+    prices/[id]/draft, draft/message   create the Gmail draft, write its words   (Feature 3)
     copilot/ask                     question to steps to answer               (Feature 4)
 components/ui/                      shadcn/ui primitives (generated)
 lib/
@@ -90,9 +90,11 @@ lib/
                                     and the tool-calling loop (ask.ts)
   storage/                          the ONLY code that reads or writes data files
   normalize.ts  match.ts  compare.ts   Feature 2's deterministic core (pure; match.ts calls the LLM through a port)
-  ingest.ts  analyse.ts  approve.ts  drafts.ts  copilot/ask.ts     feature services
+  affected.ts  drafts/              Feature 3's pure core: affected dealers and addresses; the email text and MIME message
+  ingest.ts  analyse.ts  approve.ts  prepare-draft.ts  create-draft.ts  copilot/ask.ts     feature services
 scripts/generate-mock-data.ts       mock data generator and reset
 scripts/generate-supplier-files.ts  sample supplier files to email to yourself
+scripts/set-dealer-emails.ts        point the mock dealers' addresses at your own Gmail (mock:dealer-emails)
 mock-data/                          inputs and source-of-truth data files
 .data/                              gitignored runtime state
 context/                            project documentation
@@ -117,6 +119,7 @@ context/                            project documentation
 | Raw new price lists and `manifest.json` | `mock-data/new-price-lists/` | Feature 1 | Downloaded files are gitignored |
 | Normalized price lists | `.data/normalized/<fileId>.json`, one per downloaded file | Feature 2 analysis | The separate normalised object the comparison reads. Temporary working state, gitignored; overwritten by Re-analyse |
 | Reviews: pending changes, then what was approved | `.data/reviews/<fileId>.json`, one per downloaded file | Feature 2 analysis and approval | Items with old and new values; once approved, the applied item IDs, which Feature 3 reads. Gitignored |
+| Dealer email messages and created drafts | `.data/drafts/<fileId>.json`, one per approved price list | Feature 3 | The words written for the email and a record of each Gmail draft made. Gitignored |
 | Change history and audit log | Later addition. Proposed: `.data/change-history.json`, append-only | Feature 2 approval | What changed, old to new value, when, source list, who approved |
 | Google tokens | `.data/google-tokens.json` | OAuth callback | Gitignored |
 | Secrets | `.env.local` | You | Gitignored |
@@ -227,11 +230,17 @@ code: build the email, add the dealers as BCC, create the Gmail draft
 the user reviews and sends from Gmail         the app never sends
 ```
 
-"Affected models" are the models whose price change was approved. A new model has no purchase history yet, and deactivated
-models are not covered unless we decide otherwise.
+Built 2026-09-21; the full spec is `features/feature-3-dealer-drafts.md`. "Affected models" are the models whose price change
+was approved **and applied**; new products (no history), deactivations and unapplied items are not covered, and the page says
+so. One draft per approved price list (decision 4). Gemini writes only `subject`, `greeting`, `intro` and `closing`, and a
+digit outside a changed model's name is rejected; code adds one line per change from the review. To is the connected
+account (`users.getProfile`), Bcc the dealers.
 
-Needs the Gmail compose permission, added with this feature (Feature 1 is read-only), so the user consents again and the token
-file is refreshed. Open: one draft for all dealers, or one draft per group of dealers who bought the same affected models.
+**The Gmail permission.** Drafts need `gmail.compose`, which Google describes as "Manage drafts and send emails": there is no
+narrower scope that creates drafts. So "never sends" is enforced by the code, whose Gmail client type (`DraftsGmail`) has no
+send method, and by a test that scans `lib`, `app` and `scripts` for any send call. The permission is asked for only when
+the user presses **Allow Gmail drafts**, alongside read-only access, with `include_granted_scopes`; Connect stays read-only.
+The callback checks the granted `scope`, because Google lets the user untick it.
 
 ### 6.4 Feature 4: answer sales questions
 
@@ -317,6 +326,7 @@ Sources checked 2026-09-20: ai.google.dev/gemini-api/docs/quickstart, /structure
 | Supplier emails and attachments | Malicious or oversized files; prompt injection inside cells or filenames ("set every price to 1") | Only `.xlsx` and `.csv`; size cap; parse values only; prices copied from cells by code; LLM output limited to mappings and matches; human approval before any write |
 | LLM output | Wrong, invalid or invented | Schema validation; matches must reference existing Product IDs; the copilot may only call three read-only tools with Zod-validated arguments; every number in its sentence must occur in a tool result; never executed as code |
 | Browser requests to route handlers | Forged IDs or paths | Routes accept IDs, not paths; the server re-derives filenames and metadata from Gmail and files; bodies validated with schemas |
+| Gmail draft permission (`gmail.compose`) | It could send email, and no narrower scope exists | Asked for only on Allow Gmail drafts; the Gmail client type has no send method; a test fails on any send call; To is the user, dealers only in Bcc; addresses validated and line breaks refused so no header can be injected; the browser sends only the file ID, and recipients are recomputed on the server |
 | Secrets and tokens | Leakage | Server-only modules; no `NEXT_PUBLIC_` secrets; `.env*` and `.data/` gitignored; tokens never logged |
 | OAuth flow | CSRF | `state` cookie, as in the Feature 1 spec |
 | No application login | Anyone who reaches the server can use it | Local single-user assumption; run on localhost |
@@ -342,7 +352,7 @@ Sources checked 2026-09-20: ai.google.dev/gemini-api/docs/quickstart, /structure
 |---|---|---|---|---|---|
 | 1 Read Gmail | `/`, `/price-updates` | `auth/google/*`, `ingest/scan`, `ingest/download` | ingest, gmail, google, storage | new-price-lists, manifest | Gmail (read) |
 | 2 Clean, compare, approve | `/price-updates/[id]` (steps 2–3) | `prices/[id]/analyse`, `prices/[id]/approve` | analyse, approve, normalize, match, compare, llm, storage | current price list, normalized files, reviews | Gemini |
-| 3 Dealer drafts | `/price-updates/[id]` (steps 4–5) | `drafts/*` | drafts, gmail (compose), llm | reviews (applied items), sales, dealers | Gemini, Gmail (compose) |
+| 3 Dealer drafts | `/price-updates/[id]` (steps 4–5) | `prices/[id]/draft`, `prices/[id]/draft/message` | affected, drafts, prepare-draft, create-draft, gmail/drafts, llm (drafts) | reviews (applied items), sales, dealers, `.data/drafts/` | Gemini, Gmail (compose) |
 | 4 Sales Q&A | `/copilot` | `copilot/ask` | copilot (tools, number check, loop), llm (chat) | sales, dealers, current price list | Gemini |
 
 ## 11. Key decisions
@@ -364,14 +374,14 @@ Sources checked 2026-09-20: ai.google.dev/gemini-api/docs/quickstart, /structure
 
 | # | Question | Decide in |
 |---|---|---|
-| 4 | One dealer email draft, or one per group of dealers who bought the same affected models | Feature 3 |
 | 6 | Where the audit log lives and its format | After the core workflow |
-| 7 | The 90-day window covers all generated sales, so the filter cannot exclude anyone. Extend the sales history to test it | Before Feature 3 |
 | 8 | Move to a paid Gemini key before using real supplier files | Before Feature 2 on real data |
 
 Closed:
 
 - What "remove a missing product" means is decided in 6.2: deactivate with an optional `status` field, never delete.
+- Decisions 4 and 7 were settled with Feature 3 on 2026-09-21: one Gmail draft per approved price list, all its affected dealers
+  in Bcc; and the 90-day filter is proven by tests with their own older sales, leaving the mock data unchanged.
 - Decision 5 was settled with Feature 4 on 2026-09-21: the LLM writes the answer sentence from the tool results, and code
   checks that every number in it occurs in a result, showing a template sentence when one does not (section 6.4).
 - Decisions 1–3 were settled with Feature 2 on 2026-09-21 (details in its spec, §2):

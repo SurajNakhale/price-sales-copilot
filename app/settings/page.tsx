@@ -1,13 +1,13 @@
 import { GmailSettings } from "@/app/_components/GmailSettings";
 import { PageHeader } from "@/app/_components/PageHeader";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { GMAIL_SCOPES, TOKEN_FILE, senderAllowlist } from "@/lib/config";
-import { isConnected } from "@/lib/google/oauth";
+import { TOKEN_FILE, senderAllowlist } from "@/lib/config";
+import { grantedScopes, isConnected } from "@/lib/google/oauth";
 
 export const dynamic = "force-dynamic";
 
 export default async function Settings() {
-  const connected = await isConnected();
+  const [connected, granted] = await Promise.all([isConnected(), grantedScopes()]);
 
   return (
     <>
@@ -17,7 +17,7 @@ export default async function Settings() {
         <GmailSettings
           connected={connected}
           tokenPath={TOKEN_FILE}
-          scopes={GMAIL_SCOPES}
+          scopes={granted}
           senderAllowlist={senderAllowlist()}
         />
 

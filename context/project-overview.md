@@ -103,7 +103,8 @@ The system:
 6. Keeps dealer email addresses hidden from each other.
 
 The system creates the draft but does not automatically send the email. The user can review and send it from Gmail.
-This feature needs Gmail draft-creation permission, added when the feature is built (Feature 1 is read-only). Dealer
+This feature needs Gmail's draft permission, which the app asks for the first time you create a draft (connecting Gmail
+stays read-only). Google's wording for it is "Manage drafts and send emails", but the app has no code that sends. Dealer
 emails in the mock data are Gmail aliases, so test drafts stay safe.
 
 ### Feature 4 — Answer Sales Questions

@@ -15,13 +15,14 @@ first thing to read when picking the work back up.
 | Feature 1 test kit | **Implemented.** Six sample files to email to the connected account, and a byte-level check of what the app saved. Not yet run against real Gmail |
 | App shell and dashboard | **Implemented.** Sidebar, eight routes, KPIs, two charts, data views |
 | 2 — Normalise, compare, approve | **Implemented** (2026-09-21). Analyse, review, approve, end to end through the real routes and pages. The Gemini calls are unit-tested with a scripted SDK but **have never run against the live API** (a key was added later, during Feature 4) |
-| 3 — Draft dealer emails | **Not started.** Not planned yet either |
+| 3 — Affected dealers and a Gmail draft | **Implemented** (2026-09-21). Steps 4–5 of the workflow. Affected dealers, Gemini's wording (checked live: it wrote no numbers) and the page were verified. **Creating a real draft has not been run**: it needs your click on Google's consent screen, which the app asks for on first use |
 | 4 — Sales Copilot | **Implemented** (2026-09-21). Gemini chooses among three read-only tools; code computes every number and checks the model's sentence. **16 of 16 live eval questions pass** on `gemini-3.5-flash-lite`; the default `gemini-3.8-flash` ran one question end to end before its free-tier daily quota ran out |
 
 The specs are settled and live in this folder: `project-overview.md` (what the app is for),
 `architecture.md` (how it is put together), `mock-data.md` (what the data is and how to regenerate it),
 `ui-design.md` (every screen), `features/feature-1-gmail-price-list-ingestion.md`,
-`features/feature-2-normalise-compare-approve.md` and `features/feature-4-sales-copilot.md`.
+`features/feature-2-normalise-compare-approve.md`, `features/feature-3-dealer-drafts.md` and
+`features/feature-4-sales-copilot.md`.
 
 ---
 
@@ -30,13 +31,14 @@ The specs are settled and live in this folder: `project-overview.md` (what the a
 | Command | What it reports |
 |---|---|
 | `bun run dev` | The app on http://localhost:3000 |
-| `bun run test` | 171 passing tests, 0 failing (Feature 1, Feature 2, Feature 4, analytics, sample files) |
+| `bun run test` | 253 passing tests, 0 failing (Features 1–4, analytics, sample files) **on the committed price list**. On a tree where approvals have edited it, Feature 2's and the sample-file tests fail by design: they pin the pristine catalogue (see Known gaps) |
 | `bun run lint` | Clean, no errors or warnings |
 | `bun run build` | Succeeds, no Turbopack warnings |
 | `bunx tsc --noEmit` | Clean |
-| `bun run mock:generate --check` | `OK: 30 products, 20 dealers, 200 sales lines in 66 invoices` |
+| `bun run mock:generate --check` | `OK: 30 products, 20 dealers, 200 sales lines in 66 invoices` on the committed data. On this working tree it fails with "T9 1TB has no sales", because approving the Samsung list added T9 1TB: expected after approvals (`mock-data.md` §8). Dealer addresses from `mock:dealer-emails` pass |
 | `bun run mock:supplier-files` | Writes six sample files to `mock-data/sample-supplier-files/` and prints the email checklist. Refuses to overwrite without `--force` |
 | `bun run mock:supplier-files --check-downloads` | Compares what the app saved in `mock-data/new-price-lists/` with those samples, by checksum. Before any download: `0 of 4 expected files downloaded`, `No problems found` |
+| `bun run mock:dealer-emails you@gmail.com` | Rewrites only the dealers' email field to `you+dealerN@gmail.com`, so a draft's Bcc is aliases of your own inbox. Keeps approvals |
 | `bun run copilot:eval` | Asks Gemini 16 real questions and checks the figures the chosen tools returned against values computed from the files. Needs `GEMINI_API_KEY`; 2–3 Gemini calls a question. Last run: 16 of 16 on `gemini-3.5-flash-lite` |
 
 Nothing works against Gmail until `.env.local` has a Google OAuth client, and Analyse and the Sales Copilot
@@ -65,7 +67,9 @@ need `GEMINI_API_KEY` — see `README.md`. The copilot does not need Gmail.
 | Feature 4 core | `lib/copilot/period.ts`, `filters.ts`, `sales.ts`, `products.ts`, `tools.ts`, `guard.ts`, `export.ts` | Pure. The three tools (`query_sales`, `compare_periods`, `lookup_products`), date and name resolution, the readable steps and template sentences, and the number check |
 | Feature 4 service | `lib/copilot/ask.ts`, `lib/llm/chat.ts`, `lib/llm/prompts/copilot.ts`, `app/api/copilot/ask/route.ts` | The tool-calling loop (4 rounds, 6 calls). `chat.ts` replays the model's steps verbatim, as the live API requires. Rate limits and a spent daily quota become a 503 with a readable message |
 | Feature 4 UI | `app/copilot/page.tsx`, `CopilotChat.tsx`, `CopilotAnswer.tsx` | Steps, table, checked sentence, Copy table and Download CSV. Nothing is stored; reloading starts a new thread |
-| Locked steps | `WorkflowStepper.tsx` | Steps 4–5 of the workflow are shown locked, marked Feature 3 |
+| Feature 3 core | `lib/affected.ts`, `lib/drafts/{message,mime,wording,types}.ts` | Pure. Affected dealers in the 90-day window, address checks (Gmail `+tags` and dots), the email text with every price from the review, the RFC 2822 message |
+| Feature 3 services | `lib/prepare-draft.ts`, `lib/create-draft.ts`, `lib/gmail/drafts.ts`, `lib/llm/drafts.ts`, `lib/storage/drafts.ts`, `app/api/prices/[id]/draft/**` | Gemini writes the words (one retry, then the standard message); `drafts.create` with To = you, Bcc = dealers. The Gmail client type has no send method. `.data/drafts/` |
+| Feature 3 UI | `AffectedDealers.tsx`, `DraftPanel.tsx`, `AddressNote.tsx`, `WorkflowStepper.tsx` | Steps 4–5 below the approved review; Allow Gmail drafts asks for `gmail.compose` on first use; Settings lists the permissions actually granted |
 | Sample supplier files | `scripts/generate-supplier-files.ts`, `test/sample-files.test.ts` | Six files (`.csv`, `.xlsx`, one to ignore, one unrelated, one same-name-different-content). Each supplier file is the current list with 3 changes, 1 new, 1 left out, and one changed model spelled the supplier's way (two resolved by the LLM, one by the matching key). `write-excel-file` is a dev dependency, writer only |
 
 ### Routes
@@ -138,9 +142,20 @@ These are all deliberate, not oversights.
   user.
 - **The "Analysing" status lives only in the browser that pressed Analyse.** The request runs synchronously,
   so the list never shows a file as Analysing.
-- **The 90-day window cannot exclude anyone.** Every sale falls within 90 days of the data's "today"
-  (2026-09-18), so Feature 3's filter is untestable until the sales history reaches back to about May.
-  A test in `test/analytics.test.ts` asserts this, so it will fail loudly when the data changes.
+- **The 90-day window excludes nobody on the mock data.** Every sale is inside 90 days of the data's "today"
+  (2026-09-18). The filter is proven in `test/feature-3.test.ts` with sales of its own (decision 7), and
+  `test/analytics.test.ts` fails loudly if the data changes.
+- **No real Gmail draft has been created yet.** Everything up to it ran for real: 13 affected dealers for the
+  approved Samsung list, a Gemini message (`gemini-3.5-flash-lite`, no numbers, first try), the page, and the
+  permission redirect. Creating the draft needs your consent on Google's screen. Unverified until then: that Gmail
+  keeps the Bcc on an API-created draft, and the Open in Gmail link format.
+- **The dealer addresses are still the `yourname` placeholder**, so the page shows "Test addresses detected". Run
+  `bun run mock:dealer-emails <your Gmail>` first to test with your own inbox.
+- **The Gmail draft permission could send.** `gmail.compose` is the narrowest scope that creates drafts. "Never
+  sends" rests on the code and a test that fails on any send call.
+- **`bun run test` on this working tree** reports 29 failures in Feature 2's and the sample-file tests, because
+  the Samsung approval edited `current-price-list.json` and those tests pin the pristine catalogue. They pass on the
+  committed file. `bun run mock:generate --force` resets it, but also undoes the approval Feature 3 is demoed from.
 - **No dark mode.** The light tokens were chosen with one in mind, but `.dark` in `app/globals.css` is
   still stock neutral grey and nothing switches it on.
 - **Charts were checked once, by eye.** Chrome is installed on this machine, and a headless screenshot on
@@ -151,7 +166,7 @@ These are all deliberate, not oversights.
 
 ## 5. Next steps
 
-Features 1, 2 and 4 are built. When work resumes, the order that costs least rework:
+All four features are built. When work resumes, the order that costs least rework:
 
 1. **Run the Feature 1 email test with the new samples.** `bun run mock:supplier-files --force` (the files
    on disk predate the renamed rows), send the six emails as the checklist says
@@ -162,10 +177,9 @@ Features 1, 2 and 4 are built. When work resumes, the order that costs least rew
    downloaded file and check the tabs against `mock-data.md` §9 (the renamed rows included). Approve a
    few items, check `current-price-list.json`, then reset with `bun run mock:generate --force`.
    Anything it turns up is a Feature 2 fix, ahead of Feature 3.
-3. **Plan Feature 3** as steps 4–5 of the same workflow: its own spec in `context/features/` first.
-   It reads the approved review's `applied` items. Decide open decisions 4 and 7 (one draft or several;
-   extending the sales history so the 90-day filter can exclude anyone). Needs a Gmail compose scope,
-   so the OAuth consent has to be re-granted.
+3. **Create the first real Gmail draft.** `bun run mock:dealer-emails <your Gmail>`, open the approved Samsung
+   list, Write message, Allow Gmail drafts, Create Gmail draft, then check in Gmail: To is you, Bcc holds the 13
+   aliases, the Sent folder is empty (`features/feature-3-dealer-drafts.md` §11).
 4. **Rerun the copilot eval on the default model** (`bun run copilot:eval`) once the daily quota resets, or with a
    paid key, and decide whether the default should stay `gemini-3.8-flash` or move to `gemini-3.5-flash-lite`.
 
@@ -173,17 +187,13 @@ Features 1, 2 and 4 are built. When work resumes, the order that costs least rew
 
 ## 6. Later, to be planned separately
 
-Each of these gets its own plan and its own file in `context/features/` before any code.
-
-- **Feature 3 — draft dealer emails.** Find dealers who bought the changed models in the last 90 days,
-  LLM writes a short update, saved as a Gmail draft with dealers in BCC. Never sent by the app.
-  *Not planned yet.*
+Nothing is queued. The audit log (decision 6) is the next thing the specs name.
 
 ---
 
 ## 7. Open decisions
 
-Four remain (4, 6, 7 and 8), listed in `architecture.md` §12 with where each one should be decided. They are
+Two remain (6 and 8), listed in `architecture.md` §12 with where each one should be decided. They are
 not duplicated here so there is only one list to keep current.
 
 Settled recently:
@@ -194,5 +204,7 @@ Settled recently:
   - Matching: code first by matching key, then an LLM fallback that code validates.
   - Where files live: `.data/normalized/` and `.data/reviews/`.
   - The `.xlsx` parser: `read-excel-file`.
+- Decisions 4 and 7 were settled with Feature 3 (2026-09-21): one draft per approved price list; the 90-day filter
+  proven with test data, mock data unchanged.
 - Decision 5 was settled with Feature 4 (2026-09-21): the LLM writes the copilot's sentence, and code checks every
   number in it against the tool results.

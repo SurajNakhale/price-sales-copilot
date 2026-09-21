@@ -167,8 +167,8 @@ export function ReviewPanel({
             {formatNumber(applied.size)} of {formatNumber(review.items.length)} applied
           </AlertTitle>
           <AlertDescription>
-            {describeApplied(review, applied)} Affected dealers and the draft email (steps 4–5)
-            belong to Feature 3, which is not built yet.
+            {describeApplied(review, applied)} The affected dealers and the draft email are below
+            (steps 4–5).
           </AlertDescription>
         </Alert>
       ) : null}

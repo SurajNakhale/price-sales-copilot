@@ -10,6 +10,7 @@
     "test": "bun test --conditions react-server",
     "mock:generate": "bun scripts/generate-mock-data.ts",
     "mock:supplier-files": "bun scripts/generate-supplier-files.ts",
+    "mock:dealer-emails": "bun scripts/set-dealer-emails.ts",
     "copilot:eval": "bun --conditions react-server scripts/eval-copilot.ts"
   },
   "dependencies": {

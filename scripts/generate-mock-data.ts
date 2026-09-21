@@ -53,7 +53,10 @@ const MAX_ATTEMPTS = 2000;
 const START_DATE = "2026-07-01";
 const END_DATE = "2026-09-18"; // latest invoice date = "today" for relative questions
 const LINE_COUNT = 200;
-const EMAIL_BASE = "yourname"; // replace with a real Gmail base name before testing Feature 3
+// The base the generated dealer addresses start with. Put your own Gmail name in with
+// `bun run mock:dealer-emails you@gmail.com` (which keeps your approvals), not by editing this and
+// regenerating, which would reset them. --check accepts any Gmail base; see validate().
+const EMAIL_BASE = "yourname";
 
 // brand, model, category, dealer price (INR), MRP (INR)
 const CATALOG: ReadonlyArray<readonly [Brand, string, string, number, number]> = [
@@ -360,7 +363,8 @@ function validate(products: Product[], dealers: Dealer[], sales: SalesLine[]): s
 
   // --- dealers
   if (dealers.length !== 20) errors.push(`expected 20 dealers, found ${dealers.length}`);
-  const emailPattern = new RegExp(`^${EMAIL_BASE}\\+dealer\\d+@gmail\\.com$`);
+  // Any Gmail name with a +dealerN alias: "yourname" as generated, or your own after mock:dealer-emails.
+  const emailPattern = /^[a-z0-9][a-z0-9.]*\+dealer\d+@gmail\.com$/i;
   if (new Set(dealers.map((d) => d.dealer)).size !== dealers.length) {
     errors.push("dealer names are not unique");
   }

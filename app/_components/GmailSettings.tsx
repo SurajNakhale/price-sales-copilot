@@ -14,6 +14,9 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 
+const COMPOSE = "https://www.googleapis.com/auth/gmail.compose";
+const READONLY = "https://www.googleapis.com/auth/gmail.readonly";
+
 export function GmailSettings({
   connected,
   tokenPath,
@@ -22,6 +25,7 @@ export function GmailSettings({
 }: {
   connected: boolean;
   tokenPath: string;
+  /** The permissions Google says the stored token covers. */
   scopes: string[];
   senderAllowlist: string[];
 }) {
@@ -44,7 +48,9 @@ export function GmailSettings({
         <CardTitle>Gmail</CardTitle>
         <CardDescription>
           {connected
-            ? "Connected with read-only access. Scanning never changes your mailbox."
+            ? scopes.includes(COMPOSE)
+              ? "Connected. Reading mail, and saving drafts for Feature 3. The app never sends."
+              : "Connected with read-only access. Scanning never changes your mailbox."
             : "Connect a Gmail account to look for price-list emails. Read-only access."}
         </CardDescription>
         <CardAction>
@@ -64,8 +70,27 @@ export function GmailSettings({
       </CardHeader>
       <CardContent>
         <dl className="grid gap-3 text-sm sm:grid-cols-[10rem_1fr]">
-          <dt className="text-muted-foreground">Scopes</dt>
-          <dd className="font-mono text-xs break-all">{scopes.join(", ")}</dd>
+          <dt className="text-muted-foreground">Permissions granted</dt>
+          <dd className="space-y-1">
+            {scopes.length === 0 ? (
+              <span className="text-muted-foreground">None: Gmail is not connected.</span>
+            ) : (
+              <>
+                <p>
+                  Read mail{" "}
+                  <span className="font-mono text-xs text-muted-foreground">gmail.readonly</span>
+                  {scopes.includes(READONLY) ? "" : " (not granted)"}
+                </p>
+                <p>
+                  Save drafts{" "}
+                  <span className="font-mono text-xs text-muted-foreground">gmail.compose</span>
+                  {scopes.includes(COMPOSE)
+                    ? ". Google words this as “Manage drafts and send emails”, so it could send, but the app has no code that does."
+                    : ": not granted. It is asked for when you first create a draft in a price list's workflow."}
+                </p>
+              </>
+            )}
+          </dd>
 
           <dt className="text-muted-foreground">Tokens stored at</dt>
           <dd className="font-mono text-xs break-all">{tokenPath}</dd>

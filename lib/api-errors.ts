@@ -8,6 +8,7 @@ import {
   InvalidLlmOutputError,
   LlmUnavailableError,
   MissingConfigError,
+  MissingScopeError,
   NotConnectedError,
   NotFoundError,
   UnusableFileError,
@@ -63,6 +64,13 @@ export function errorResponse(error: unknown): NextResponse<ApiError> {
     return NextResponse.json(
       { error: "invalid_llm_output", message: error.message },
       { status: 502 },
+    );
+  }
+
+  if (error instanceof MissingScopeError) {
+    return NextResponse.json(
+      { error: "gmail_scope_missing", message: error.message },
+      { status: 403 },
     );
   }
 

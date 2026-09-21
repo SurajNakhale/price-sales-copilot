@@ -4,8 +4,8 @@ Reads brand price lists from Gmail, shows what changed, drafts an email to affec
 answers sales questions. Built feature by feature — see [`context/`](context/) for the project
 overview, architecture, mock data and per-feature specs.
 
-**Features 1 (Gmail price list ingestion), 2 (normalise, compare, approve) and 4 (Sales Copilot) are
-implemented.** Feature 3 (dealer email drafts) is specified but not built.
+**All four features are implemented:** 1 (Gmail price list ingestion), 2 (normalise, compare, approve),
+3 (affected dealers and a Gmail draft) and 4 (Sales Copilot).
 
 ---
 
@@ -180,6 +180,34 @@ The mock sample files are fine on the free tier.
 `bun run mock:generate --force` resets the current price list after trying approvals. The full spec is in
 [`context/features/feature-2-normalise-compare-approve.md`](context/features/feature-2-normalise-compare-approve.md).
 
+## What Feature 3 does
+
+Once a price list is approved, its workflow page shows steps 4 and 5.
+
+```text
+approved price changes
+   ▼
+Affected dealers    code: who bought a repriced model in the last 90 days (today = 18 Sep 2026)
+   ▼
+Write message       Gemini writes the words; the app adds every price from the review
+   ▼
+Create Gmail draft  To = you, Bcc = the dealers, so they cannot see each other. Nothing is sent
+   ▼
+Open in Gmail       you review, edit and send it yourself
+```
+
+**Test with your own inbox first.** The mock dealers' addresses are the placeholder `yourname+dealerN@gmail.com`.
+Run `bun run mock:dealer-emails you@gmail.com` and they become `you+dealer1@gmail.com` and so on: Gmail delivers
+every one to you, and the page says so. It changes nothing else, so your approvals stay.
+
+**The Gmail permission.** The first **Create Gmail draft** needs one more permission, so the page shows **Allow
+Gmail drafts** and Google asks again (with its "unverified app" screen). Google calls this permission "Manage
+drafts and send emails": it is the narrowest one that can create drafts. The app never sends, and has no code
+that could; a test fails if any appears. Connect Gmail itself stays read-only.
+
+Gemini sees the changed products and prices, never a dealer's name or address. The full spec is in
+[`context/features/feature-3-dealer-drafts.md`](context/features/feature-3-dealer-drafts.md).
+
 ## What Feature 4 does
 
 Open **Sales Copilot** and ask in plain English: "Which dealer bought the most Samsung products?", "Compare August
@@ -232,7 +260,10 @@ publishes the numbers; see yours at <https://aistudio.google.com/rate-limit>. On
    ```bash
    ANALYSE_MODEL=gemini-3.8-flash
    COPILOT_MODEL=gemini-3.5-flash-lite
+   DRAFT_MODEL=gemini-3.5-flash-lite
    ```
+   A dealer email costs 1 request (2 if Gemini's first wording breaks the rules), and **Use the standard message**
+   costs none.
 2. **Repeat questions are free.** The copilot remembers answers until the server restarts, so a repeated question or
    suggestion costs nothing ("cached, no Gemini request" under the answer). Changing the data files starts afresh.
 3. **Economy mode** halves the copilot's cost: `COPILOT_SENTENCE=template` has the app write the sentence from the

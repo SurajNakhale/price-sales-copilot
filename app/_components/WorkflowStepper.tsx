@@ -5,8 +5,8 @@ import { Card, CardContent } from "@/components/ui/card";
 /**
  * The five steps one price list moves through (context/ui-design.md §1,
  * Workflow 1). Each names who acts, so it is never unclear whether the app or
- * the model did something. Steps 3 and 5 belong to a person. Steps 4–5 are
- * Feature 3 and unlock only after an approval.
+ * the model did something. Steps 3 and 5 belong to a person. Steps 4–5 unlock
+ * only after an approval.
  *
  * Without `current` it is the legend on the Price Updates list.
  */
@@ -25,14 +25,15 @@ export function WorkflowStepper({
   current,
   approved = false,
 }: {
-  /** 1-based. Omit for the legend. */
+  /** 1-based; 6 means every step is done. Omit for the legend. */
   current?: number;
   approved?: boolean;
 }) {
   const stateOf = (step: number): StepState => {
     if (current === undefined) return "legend";
     if (step >= 4 && !approved) return "locked";
-    if (step < current || (approved && step === current)) return "done";
+    // `current` past the last step (6) means every step is done.
+    if (step < current) return "done";
     if (step === current) return "current";
     return "ahead";
   };
@@ -58,11 +59,7 @@ export function WorkflowStepper({
                     {step.title}
                   </p>
                   <p className="truncate text-xs text-muted-foreground">
-                    {number >= 4
-                      ? state === "locked"
-                        ? "Feature 3 · after approval"
-                        : `${step.who} · Feature 3`
-                      : step.who}
+                    {state === "locked" ? "After approval" : step.who}
                   </p>
                 </div>
               </li>

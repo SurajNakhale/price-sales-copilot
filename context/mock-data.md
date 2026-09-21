@@ -56,7 +56,7 @@ There are four data sources:
 | Product ID stability | Product ID is the stable key. If a supplier later spells the model differently ("Portable SSD T7 1TB"), the ID does not change. It replaces the `SEG-001` sequence style from the original spec |
 | Money | Plain integer rupees (`7000`), no `₹` symbol or commas. Formatting is a UI concern |
 | Sales lines | Carry both `productId` and `model`, so joins never depend on model-name matching |
-| Dealer emails | `yourname+dealer1@gmail.com` … `yourname+dealer20@gmail.com`. Replace `yourname` with your Gmail base name before testing Feature 3 (Gmail aliases keep drafts safe) |
+| Dealer emails | `yourname+dealer1@gmail.com` … `yourname+dealer20@gmail.com`. Run `bun run mock:dealer-emails you@gmail.com` to make them `you+dealerN@gmail.com`, aliases of your own inbox, before testing Feature 3. It changes only the email field, so it keeps approvals, which `mock:generate --force` would reset. `--check` accepts any Gmail name with a `+dealerN` alias |
 | "Today" | The latest invoice date, `2026-09-18`, is treated as today for relative questions. "Last month" = August 2026 |
 | Sales period | Invoice dates fall between `2026-07-01` and `2026-09-18` (July and August in full, September to date). No Sunday invoices. The earliest generated invoice is `2026-07-02` |
 | Currency | INR |

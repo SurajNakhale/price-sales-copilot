@@ -2,9 +2,10 @@ import { timingSafeEqual } from "node:crypto";
 
 import { NextResponse, type NextRequest } from "next/server";
 
-import { OAUTH_STATE_COOKIE } from "@/lib/config";
+import { OAUTH_DRAFTS_COOKIE, OAUTH_RETURN_COOKIE, OAUTH_STATE_COOKIE } from "@/lib/config";
 import { errorMessage } from "@/lib/errors";
-import { exchangeCodeForTokens } from "@/lib/google/oauth";
+import { forgetConnectedAddress } from "@/lib/gmail/drafts";
+import { exchangeCodeForTokens, hasDraftPermission, safeReturnPath } from "@/lib/google/oauth";
 
 function sameState(a: string, b: string): boolean {
   const left = Buffer.from(a);
@@ -12,14 +13,17 @@ function sameState(a: string, b: string): boolean {
   return left.length === right.length && timingSafeEqual(left, right);
 }
 
-function backToHome(request: NextRequest, params: Record<string, string>) {
-  const url = new URL("/", request.nextUrl.origin);
+/** Back to where the flow started (the dashboard, or a workflow page), with a result in the query. */
+function backTo(request: NextRequest, returnTo: string | null, params: Record<string, string>) {
+  const url = new URL(returnTo ?? "/", request.nextUrl.origin);
   for (const [key, value] of Object.entries(params)) {
     url.searchParams.set(key, value);
   }
 
   const response = NextResponse.redirect(url);
   response.cookies.delete(OAUTH_STATE_COOKIE);
+  response.cookies.delete(OAUTH_DRAFTS_COOKIE);
+  response.cookies.delete(OAUTH_RETURN_COOKIE);
   return response;
 }
 
@@ -27,26 +31,34 @@ function backToHome(request: NextRequest, params: Record<string, string>) {
 export async function GET(request: NextRequest) {
   const params = request.nextUrl.searchParams;
 
+  const wantedDrafts = request.cookies.get(OAUTH_DRAFTS_COOKIE)?.value === "1";
+  const returnTo = safeReturnPath(request.cookies.get(OAUTH_RETURN_COOKIE)?.value);
+  // A failure is reported where the user was, under the name that page looks for.
+  const failed = (message: string) =>
+    backTo(request, returnTo, wantedDrafts ? { drafts: "error", connect_error: message } : { connect_error: message });
+
   const denied = params.get("error");
-  if (denied) {
-    return backToHome(request, { connect_error: `Google said: ${denied}` });
-  }
+  if (denied) return failed(`Google said: ${denied}`);
 
   const code = params.get("code");
   const state = params.get("state");
   const expectedState = request.cookies.get(OAUTH_STATE_COOKIE)?.value;
 
   if (!code || !state || !expectedState || !sameState(state, expectedState)) {
-    return backToHome(request, {
-      connect_error:
-        "The sign-in could not be verified. Start from Connect Gmail again.",
-    });
+    return failed("The sign-in could not be verified. Start again from Connect Gmail.");
   }
 
   try {
     await exchangeCodeForTokens(code);
-    return backToHome(request, { connected: "1" });
+    forgetConnectedAddress();
+
+    if (!wantedDrafts) return backTo(request, returnTo, { connected: "1" });
+
+    // Google lets the user untick a permission, so ask the token rather than assume.
+    return (await hasDraftPermission())
+      ? backTo(request, returnTo, { drafts: "granted" })
+      : backTo(request, returnTo, { drafts: "denied" });
   } catch (error) {
-    return backToHome(request, { connect_error: errorMessage(error) });
+    return failed(errorMessage(error));
   }
 }

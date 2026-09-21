@@ -4,6 +4,7 @@ import { google, type Auth } from "googleapis";
 
 import {
   DEFAULT_REDIRECT_URI,
+  GMAIL_COMPOSE_SCOPE,
   GMAIL_SCOPES,
   TOKEN_FILE,
 } from "@/lib/config";
@@ -32,14 +33,45 @@ export function createOAuthClient(): Auth.OAuth2Client {
   );
 }
 
-/** Consent URL. `access_type: offline` + `prompt: consent` so a refresh token comes back. */
-export function getAuthUrl(state: string): string {
+/**
+ * Consent URL. `access_type: offline` + `prompt: consent` so a refresh token comes back.
+ *
+ * Connect asks for read-only access. "Allow Gmail drafts" (`drafts: true`) adds
+ * the compose permission. Both use `include_granted_scopes`, so a token issued
+ * later (the weekly reconnect while the consent screen is in Testing mode) still
+ * covers what was granted before instead of silently dropping drafts.
+ */
+export function getAuthUrl(state: string, options: { drafts?: boolean } = {}): string {
   return createOAuthClient().generateAuthUrl({
     access_type: "offline",
     prompt: "consent",
-    scope: GMAIL_SCOPES,
+    include_granted_scopes: true,
+    scope: options.drafts ? [...GMAIL_SCOPES, GMAIL_COMPOSE_SCOPE] : GMAIL_SCOPES,
     state,
   });
+}
+
+/** The scopes Google says a token covers (a space-separated string in its `scope` field). */
+export function scopesOf(tokens: Pick<Auth.Credentials, "scope"> | null | undefined): string[] {
+  return (tokens?.scope ?? "").split(/\s+/).filter(Boolean);
+}
+
+/** The permissions the stored token actually has, as Google reported them. */
+export async function grantedScopes(): Promise<string[]> {
+  return scopesOf(await loadTokens());
+}
+
+/** Whether the token may create drafts. Google lets a user untick it on the consent screen, so this is checked, not assumed. */
+export async function hasDraftPermission(): Promise<boolean> {
+  return (await grantedScopes()).includes(GMAIL_COMPOSE_SCOPE);
+}
+
+/**
+ * Where "Allow Gmail drafts" may send the user back to: a price-list workflow
+ * page and nothing else, so the return path cannot be turned into an open redirect.
+ */
+export function safeReturnPath(value: string | null | undefined): string | null {
+  return typeof value === "string" && /^\/price-updates\/[0-9a-f]{12}$/.test(value) ? value : null;
 }
 
 export async function loadTokens(): Promise<Auth.Credentials | null> {

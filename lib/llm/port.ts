@@ -1,5 +1,6 @@
 import type * as z from "zod";
 
+import type { DealerEmailProse } from "@/lib/drafts/types";
 import type { Brand, Cell, ColumnMapping } from "@/lib/types";
 
 /**
@@ -99,4 +100,29 @@ export function functionResultStep(call: ChatFunctionCall, result: unknown): Cha
     name: call.name,
     result: [{ type: "text", text: JSON.stringify(result) }],
   };
+}
+
+// ------------------------------------------------ dealer emails (Feature 3)
+
+/** What Gemini is told: the brand and the changes. Never a dealer name, an address or a dealer count. */
+export interface DealerEmailInput {
+  brand: Brand;
+  changes: {
+    model: string;
+    old: { dealerPrice: number; mrp: number };
+    new: { dealerPrice: number; mrp: number };
+  }[];
+}
+
+/**
+ * Writes the words of a dealer price-update email. Kept apart from LlmPort so
+ * Feature 2's fakes do not have to know about it. `check` rejects wording that
+ * breaks the rules (a number Gemini typed); a rejection is sent back once, and
+ * a second failure throws InvalidLlmOutputError.
+ */
+export interface DraftPort {
+  draftDealerMessage(
+    input: DealerEmailInput,
+    check: (prose: DealerEmailProse) => string | null,
+  ): Promise<DealerEmailProse>;
 }

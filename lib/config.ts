@@ -28,6 +28,12 @@ export const TOKEN_FILE = path.join(DATA_DIR, "google-tokens.json");
 export const NORMALIZED_DIR = path.join(DATA_DIR, "normalized");
 export const REVIEWS_DIR = path.join(DATA_DIR, "reviews");
 
+/**
+ * Feature 3 working state: the message written for a price list, and the drafts made from it.
+ * The 90-day window and the recipient cap live in lib/affected.ts, which the browser also loads.
+ */
+export const DRAFTS_DIR = path.join(DATA_DIR, "drafts");
+
 /** A supplier file with more rows than this is refused rather than analysed. */
 export const MAX_PRICE_LIST_ROWS = 2000;
 
@@ -49,10 +55,21 @@ export const ALLOWED_EXTENSIONS = [".xlsx", ".csv"] as const;
 /** How many messages one scan looks at. */
 export const MAX_MESSAGES = 25;
 
-/** Feature 1 reads Gmail and nothing else. Feature 3 will need a compose scope. */
+/** Connect asks for this alone: Feature 1 reads Gmail and nothing else. */
 export const GMAIL_SCOPES = ["https://www.googleapis.com/auth/gmail.readonly"];
 
+/**
+ * Feature 3's draft permission, asked for only when the user first creates a draft.
+ * Google describes it as "Manage drafts and send emails" and offers no narrower
+ * scope that creates drafts, so the app's promise never to send is enforced in
+ * code (and by a test), not by this permission.
+ */
+export const GMAIL_COMPOSE_SCOPE = "https://www.googleapis.com/auth/gmail.compose";
+
 export const OAUTH_STATE_COOKIE = "google_oauth_state";
+/** Set while "Allow Gmail drafts" is in progress: where to return to, and that drafts were asked for. */
+export const OAUTH_RETURN_COOKIE = "google_oauth_return";
+export const OAUTH_DRAFTS_COOKIE = "google_oauth_drafts";
 
 export const DEFAULT_REDIRECT_URI =
   "http://localhost:3000/api/auth/google/callback";

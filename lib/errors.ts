@@ -83,6 +83,18 @@ export class LlmUnavailableError extends Error {
   }
 }
 
+/** Gmail is connected but was not given the permission this needs (creating drafts). */
+export class MissingScopeError extends Error {
+  readonly code = "gmail_scope_missing" as const;
+
+  constructor(
+    message = "Gmail has not been given permission to create drafts yet. Press Allow Gmail drafts.",
+  ) {
+    super(message);
+    this.name = "MissingScopeError";
+  }
+}
+
 export function errorMessage(error: unknown): string {
   return error instanceof Error ? error.message : String(error);
 }

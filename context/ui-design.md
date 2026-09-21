@@ -1,9 +1,9 @@
 # UI Design
 
-**Status:** Partly built (2026-09-21). The shell, dashboard, data views, Settings, the Feature 1
+**Status:** Built (2026-09-21). The shell, dashboard, data views, Settings, the Feature 1
 scan dialog and the Price Updates workflow up to step 3 (Feature 2) exist, and were checked in
-headless Chrome at 1440 wide. The Sales Copilot (Feature 4) is built (§2.7) but has not been
-looked at in a browser. Steps 4–5 (Feature 3) are not built yet. See `current-state.md`.
+headless Chrome at 1440 wide. The Sales Copilot (Feature 4) is built (§2.7). Steps 4–5 (Feature 3)
+are built (§2.6) and were checked the same way. Every screen is now built. See `current-state.md`.
 **Artboards:** https://claude.ai/artifact/Lkg3pQwdwu91aycaZ3KeTL (private; share it from the page's Share menu if someone else needs it)
 
 This is the plan for the whole interface. It follows `project-overview.md` (what the app does),
@@ -127,7 +127,7 @@ dashboard's "New price lists" card is the same component, limited to five rows.
 
 **Stepper labels as built** (`WorkflowStepper`), naming who acts in each step. Step 2 reads
 "LLM maps · app copies" rather than just "LLM", because the model only names the columns and the app
-copies every price. Steps 4–5 show a lock and "Feature 3 · after approval" until the file is approved.
+copies every price. Steps 4–5 show a lock and "After approval" until the file is approved.
 
 ### 2.5 Workflow step 3 — Review & approve
 
@@ -188,6 +188,24 @@ nothing is written until you approve, and makes a partial approval ("these three
 
 The LLM is given the changed products and prices only — never dealer names or addresses. The message is
 therefore general, and the app does the targeting.
+
+**As built** (`AffectedDealers`, `DraftPanel`, `AddressNote`), below the approved review:
+
+- **Step 4** lists every affected dealer, biggest buyers first: a ✓ for a dealer who will be in the Bcc, or a
+  "no address" badge; state; the repriced models bought with units; total units; last order. Footnotes give the
+  Bcc address count (and say so when dealers share one), any skipped dealer and why, and what the approval did
+  that is not covered (new products, deactivations, items not approved).
+- **Step 5** shows the envelope: To is the connected account, Bcc the **13 dealers · hidden from each other** pill
+  with the address count, then the subject and the full body as it will be drafted. A line under the body says
+  who wrote the words (Gemini and its model, or the standard message) and that every price came from the review.
+- **Write message / Rewrite** asks Gemini; **Use the standard message (no Gemini)** works without a key or quota.
+- **Allow Gmail drafts** appears until the permission is granted, with Google's own wording of it and the line
+  that the app only ever saves. After consent the page shows granted, denied (the box was unticked) or the error.
+- **Create Gmail draft**, then a "Draft created" note with **Open in Gmail**. **Create another draft** asks first.
+- **The address note** sits in step 5, where you act: your own aliases get a plain note; the `yourname`
+  placeholder gets the one warning, with the `mock:dealer-emails` command; real dealer addresses get a neutral
+  note. It moves to step 4 only when no dealer has an address, so there is no step 5.
+- The stepper unlocks steps 4–5 on approval, and ticks step 5 once a draft exists.
 
 ### 2.7 Sales Copilot (`/copilot`)
 
