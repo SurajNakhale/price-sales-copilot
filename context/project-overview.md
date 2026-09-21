@@ -197,7 +197,7 @@ Everything else uses local mock data stored in simple project files, not a datab
 | Dealer information | `mock-data/dealers/dealers.json` | 20 dealers with state and email (Gmail aliases, so test drafts stay safe) |
 | Sales transactions | `mock-data/sales/sales-data.json` | 200 invoice lines, July to September 2026. Each dealer's purchase history is read from these lines |
 | New price lists | `mock-data/new-price-lists/` | Raw supplier files downloaded from Gmail by Feature 1 |
-| Normalized price lists | Decided in Feature 2 | The common-format version of each new list, produced by Feature 2 and saved as a local file |
+| Normalized price lists | `.data/normalized/<fileId>.json` | The common-format version of each new list, produced by Feature 2 and saved as a temporary local file; the comparison reads it |
 
 The mock data is plain JSON files rather than a database.
 
@@ -271,5 +271,7 @@ who approved) is added after the core workflow and before the final build.
 ## Related Documents
 
 - `context/mock-data.md`: mock data structure, decisions and generator
-- `context/features/`: one specification per feature (Feature 1 exists)
-- `context/architecture.md` and `context/current-state.md`: to be written
+- `context/features/`: one specification per feature (Features 1 and 2 exist)
+- `context/architecture.md`: how the app is put together
+- `context/current-state.md`: what is built, what runs, and what comes next
+- `context/ui-design.md`: every screen

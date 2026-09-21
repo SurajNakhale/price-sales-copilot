@@ -5,8 +5,10 @@ import "./globals.css";
 import { AppSidebar } from "@/app/_components/AppSidebar";
 import { SidebarInset, SidebarProvider } from "@/components/ui/sidebar";
 import { TooltipProvider } from "@/components/ui/tooltip";
+import { summarizeReviews } from "@/lib/compare";
 import { readDealers, readProducts, readSales } from "@/lib/data/mock-data";
 import { isConnected } from "@/lib/google/oauth";
+import { listReviews } from "@/lib/storage/price-reviews";
 
 // Newsreader for the wordmark and page titles, IBM Plex Sans for everything
 // else. See context/ui-design.md section 5.
@@ -38,11 +40,12 @@ export const metadata: Metadata = {
 export const dynamic = "force-dynamic";
 
 export default async function RootLayout({ children }: LayoutProps<"/">) {
-  const [connected, products, dealers, sales] = await Promise.all([
+  const [connected, products, dealers, sales, reviews] = await Promise.all([
     isConnected(),
     readProducts(),
     readDealers(),
     readSales(),
+    listReviews(),
   ]);
 
   return (
@@ -55,8 +58,7 @@ export default async function RootLayout({ children }: LayoutProps<"/">) {
           <SidebarProvider>
             <AppSidebar
               connected={connected}
-              // Nothing produces review items until Feature 2 exists.
-              needsReview={0}
+              needsReview={summarizeReviews(reviews)?.needsReview.total ?? 0}
               counts={{
                 products: products.length,
                 dealers: dealers.length,

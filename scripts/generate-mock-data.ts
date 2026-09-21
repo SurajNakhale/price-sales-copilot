@@ -7,9 +7,11 @@
  *
  * Output is deterministic: a seeded PRNG means reruns produce identical files.
  */
-import { createHash } from "node:crypto";
 import { existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import { dirname, join } from "node:path";
+
+// The one Product ID rule, shared with the app (context/architecture.md §6.2).
+import { BRAND_CODES, productIdFor } from "../lib/product-id";
 
 type Brand = "Seagate" | "Samsung" | "TP-Link";
 
@@ -52,12 +54,6 @@ const START_DATE = "2026-07-01";
 const END_DATE = "2026-09-18"; // latest invoice date = "today" for relative questions
 const LINE_COUNT = 200;
 const EMAIL_BASE = "yourname"; // replace with a real Gmail base name before testing Feature 3
-
-const BRAND_CODES: Record<Brand, string> = {
-  Seagate: "SEG",
-  Samsung: "SAM",
-  "TP-Link": "TPL",
-};
 
 // brand, model, category, dealer price (INR), MRP (INR)
 const CATALOG: ReadonlyArray<readonly [Brand, string, string, number, number]> = [
@@ -185,15 +181,6 @@ function shuffle<T>(rng: () => number, items: readonly T[]): T[] {
   return out;
 }
 
-function makeProductId(brand: Brand, model: string): string {
-  const hash = createHash("sha256")
-    .update(`${brand}|${model}`.toLowerCase())
-    .digest("hex")
-    .slice(0, 5)
-    .toUpperCase();
-  return `${BRAND_CODES[brand]}-${hash}`;
-}
-
 /** Every date from start to end inclusive, skipping Sundays. */
 function invoiceDays(start: string, end: string): string[] {
   const days: string[] = [];
@@ -212,7 +199,7 @@ function invoiceDays(start: string, end: string): string[] {
 
 function buildProducts(): Product[] {
   return CATALOG.map(([brand, model, category, dealerPrice, mrp]) => ({
-    productId: makeProductId(brand, model),
+    productId: productIdFor(brand, model),
     brand,
     model,
     category,

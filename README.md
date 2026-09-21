@@ -4,7 +4,8 @@ Reads brand price lists from Gmail, shows what changed, drafts an email to affec
 answers sales questions. Built feature by feature — see [`context/`](context/) for the project
 overview, architecture, mock data and per-feature specs.
 
-**Feature 1 (Gmail price list ingestion) is implemented.** Features 2 to 4 are specified but not built.
+**Features 1 (Gmail price list ingestion) and 2 (normalise, compare, approve) are implemented.**
+Features 3 and 4 are specified but not built.
 
 ---
 
@@ -12,11 +13,12 @@ overview, architecture, mock data and per-feature specs.
 
 ```bash
 bun install
-cp .env.example .env.local     # then fill in the Google credentials (see below)
+cp .env.example .env.local     # then fill in the Google credentials and the Gemini key (see below)
 bun dev                        # http://localhost:3000
 ```
 
 Without Google credentials the app still runs; Connect Gmail will report the missing variable.
+Without `GEMINI_API_KEY`, Analyse reports the missing variable and nothing else is affected.
 
 | Command | What it does |
 |---|---|
@@ -119,6 +121,12 @@ The scan looks for emails from the last 90 days that have an `.xlsx` or `.csv` a
 
 Then click **Scan Gmail**, check the list, and click **Download selected**.
 
+Prefer ready-made files? `bun run mock:supplier-files` writes sample price lists (`.csv` and `.xlsx`, plus a
+`.txt` and an unrelated spreadsheet that should be ignored) to `mock-data/sample-supplier-files/` and prints which
+subject line to send each with. Afterwards, `bun run mock:supplier-files --check-downloads` compares what the app
+saved with what you sent, byte for byte. The full procedure is in
+[`context/features/feature-1-gmail-price-list-ingestion.md`](context/features/feature-1-gmail-price-list-ingestion.md) §10.
+
 ---
 
 ## What Feature 1 does
@@ -144,6 +152,33 @@ mock-data/new-price-lists/    raw files + manifest.json (sender, subject, date, 
 The Gmail search, the allowed extensions and the message cap live in [`lib/config.ts`](lib/config.ts).
 You can narrow the search to specific senders with `SENDER_ALLOWLIST` in `.env.local`.
 
+## What Feature 2 does
+
+```text
+Analyse (a button, per file)
+   ▼
+LLM: column mapping    Gemini sees the first 15 rows and says which column is model, category,
+   │                   dealer price and MRP. It never outputs a price.
+   ▼
+Normalise (code)       every row is read and each price copied from its cell → .data/normalized/<id>.json
+   ▼
+Match (code, then LLM) matching key first; renamed models go to Gemini, and the app checks every answer
+   ▼
+Compare (code)         price changes, new products, missing products → .data/reviews/<id>.json
+   ▼
+Review & approve       you tick what to apply; missing products are kept or deactivated, never deleted
+   ▼
+current-price-list.json   written once, atomically, with only what you approved
+```
+
+Put a Gemini API key in `.env.local` as `GEMINI_API_KEY` (from <https://aistudio.google.com/apikey>) and
+restart `bun dev`. It is a separate credential from the Gmail OAuth client. **Use a paid-tier key before
+analysing real supplier price lists**: on the free tier Google may use the content to improve its products.
+The mock sample files are fine on the free tier.
+
+`bun run mock:generate --force` resets the current price list after trying approvals. The full spec is in
+[`context/features/feature-2-normalise-compare-approve.md`](context/features/feature-2-normalise-compare-approve.md).
+
 ## Troubleshooting
 
 | What you see | Cause and fix |
@@ -153,6 +188,8 @@ You can narrow the search to specific senders with `SENDER_ALLOWLIST` in `.env.l
 | "Missing environment variable GOOGLE_CLIENT_ID" | `.env.local` is missing or the dev server was not restarted after editing it. |
 | "Gmail access has expired or was revoked" | Normal after 7 days in Testing mode. Click Connect Gmail again. |
 | Scan finds nothing | The query needs an `.xlsx`/`.csv` attachment, "price" in the subject or filename, and an email newer than 90 days. |
+| "Missing environment variable GEMINI_API_KEY" | Add the key to `.env.local` and restart `bun dev`, then press Retry. |
+| "The current price list changed after this file was analysed" | Another file's approval changed the same products first. Press Re-analyse, then approve. |
 
 ## Security notes
 

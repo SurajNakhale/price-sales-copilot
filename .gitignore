@@ -41,6 +41,9 @@ yarn-error.log*
 mock-data/new-price-lists/*
 !mock-data/new-price-lists/.gitkeep
 
+# sample supplier files to email for testing (regenerate with bun run mock:supplier-files)
+/mock-data/sample-supplier-files/
+
 # vercel
 .vercel
 

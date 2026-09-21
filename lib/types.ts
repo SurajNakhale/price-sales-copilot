@@ -97,8 +97,166 @@ export interface IngestReport {
   failed: number;
 }
 
-/** Shape of an error response from the Feature 1 API routes. */
+/** Shape of an error response from every API route. */
 export interface ApiError {
-  error: "not_connected" | "missing_config" | "bad_request" | "internal";
+  error:
+    | "not_connected"
+    | "missing_config"
+    | "bad_request"
+    | "not_found"
+    | "conflict"
+    | "unusable_file"
+    | "invalid_llm_output"
+    | "internal";
   message: string;
+}
+
+// ---------------------------------------------------------------------------
+// Feature 2: normalise, compare, approve.
+// See context/features/feature-2-normalise-compare-approve.md.
+// ---------------------------------------------------------------------------
+
+/** One spreadsheet cell as read from the file. Dates become ISO strings. */
+export type Cell = string | number | boolean | null;
+
+/** A parsed supplier file: the sheet used (null for csv) and its rows. */
+export interface ParsedSheet {
+  sheet: string | null;
+  rows: Cell[][];
+}
+
+/**
+ * What the LLM proposes for one file: which row holds the headers and which
+ * header is which field. Never rows or prices; code applies it.
+ */
+export interface ColumnMapping {
+  /** 1-based row number of the header row. */
+  headerRow: number;
+  brand: Brand;
+  columns: {
+    model: string;
+    /** Null when the file has no category column. */
+    category: string | null;
+    dealerPrice: string;
+    mrp: string;
+  };
+}
+
+/** A row the mapping could not use, shown to the reviewer rather than dropped. */
+export interface RowIssue {
+  rowNumber: number;
+  reason: string;
+}
+
+/** A data row after the mapping is applied, before it is matched. */
+export interface MappedRow {
+  rowNumber: number;
+  /** The model exactly as the supplier wrote it, trimmed. */
+  supplierModel: string;
+  category: string | null;
+  dealerPrice: number;
+  mrp: number;
+}
+
+/** How a row found its Product ID. */
+export type MatchMethod = "key" | "llm" | "new";
+
+/** One row of the normalised file: the standard price-list shape plus provenance. */
+export interface NormalizedRow {
+  rowNumber: number;
+  productId: string;
+  match: MatchMethod;
+  supplierModel: string;
+  brand: Brand;
+  /** The catalogue's model name when matched, the supplier's when new. */
+  model: string;
+  category: string;
+  dealerPrice: number;
+  mrp: number;
+  /** The file's category, when it differs from the catalogue's. Shown, never applied. */
+  fileCategory?: string;
+}
+
+/** `.data/normalized/<fileId>.json`: the separate normalised object the comparison reads. */
+export interface NormalizedPriceList {
+  fileId: string;
+  sourceFile: string;
+  sheet: string | null;
+  brand: Brand;
+  mapping: ColumnMapping;
+  rows: NormalizedRow[];
+  issues: RowIssue[];
+  normalizedAt: string;
+}
+
+export interface Prices {
+  dealerPrice: number;
+  mrp: number;
+}
+
+export interface PriceChangeItem {
+  kind: "price-change";
+  itemId: string;
+  productId: string;
+  brand: Brand;
+  model: string;
+  supplierModel: string;
+  match: MatchMethod;
+  old: Prices;
+  new: Prices;
+  fileCategory?: string;
+}
+
+export interface NewProductItem {
+  kind: "new-product";
+  itemId: string;
+  productId: string;
+  brand: Brand;
+  model: string;
+  category: string;
+  dealerPrice: number;
+  mrp: number;
+  /** Matched a discontinued product: approving reuses its ID and clears `status`. */
+  reactivates: boolean;
+}
+
+export interface MissingItem {
+  kind: "missing";
+  itemId: string;
+  productId: string;
+  brand: Brand;
+  model: string;
+  category: string;
+  dealerPrice: number;
+  mrp: number;
+}
+
+export type ReviewItem = PriceChangeItem | NewProductItem | MissingItem;
+
+export type ReviewStatus = "needs-review" | "approved" | "no-changes" | "failed";
+
+/** `.data/reviews/<fileId>.json`: the pending changes and, once approved, what was applied. */
+export interface PriceReview {
+  fileId: string;
+  sourceFile: string;
+  /** Null only when the analysis failed before the brand was known. */
+  brand: Brand | null;
+  status: ReviewStatus;
+  rowsInFile: number;
+  unchanged: number;
+  /** How many rows were skipped as issues. */
+  issues: number;
+  items: ReviewItem[];
+  analysedAt: string;
+  /** Set when status is "failed". */
+  error?: string;
+  approvedAt?: string;
+  /** Item IDs written to the current price list. The handoff to Feature 3. */
+  applied?: string[];
+}
+
+/** An item that no longer matches the current price list, and why. */
+export interface OutdatedItem {
+  itemId: string;
+  reason: string;
 }

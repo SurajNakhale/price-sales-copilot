@@ -203,6 +203,54 @@ Run from the project root:
 
 After Feature 2 approves changes (for example adds `T9 1TB`), `--check` is expected to report differences from the baseline. That is normal. Use `--force` to reset.
 
-## 9. Later addition (not now)
+## 9. Sample supplier files
+
+Separate from the three baseline datasets above. These are files to **email to the Gmail account the app is
+connected to**, so Feature 1 can be tried against real messages, and so Feature 2 has something to parse later.
+They are generated, gitignored, and live in `mock-data/sample-supplier-files/`. They are deliberately **not** in
+`mock-data/new-price-lists/`, which is where the app saves what it downloads: a file put there by the generator
+would make it impossible to tell whether the app downloaded anything.
+
+| Command | What it does |
+|---|---|
+| `bun run mock:supplier-files` | Writes the six files and prints the email checklist. Refuses to overwrite, because regenerating changes the bytes of files you have already emailed |
+| `bun run mock:supplier-files --force` | Overwrites them |
+| `bun run mock:supplier-files --check-downloads` | Read-only. Compares what the app saved in `new-price-lists/` with these files by checksum. A sample counts as downloaded only if `manifest.json` ties a saved file to it, so a copy dropped in by hand is flagged rather than passing for the app's work |
+
+| File | Purpose |
+|---|---|
+| `Samsung_Price_List.csv` | Happy path, csv. Header on row 1: `Model, Type, Dealer Price (INR), MRP (INR)` |
+| `Seagate_Price_List.xlsx` | Happy path, xlsx. Sheet "Price List", two title rows and a blank row above the header `SKU Name, Segment, DP, MRP` |
+| `TPLink_Price_List.xlsx` | xlsx sent beside a non-price file. Sheet "Dealer Rates", header `Model No., Category, Dealer Net (INR), Retail Price (INR)` |
+| `Dealer_Terms.txt` | Must be **ignored**: not an allowed extension |
+| `Lunch_Menu.xlsx` | Must **not be found**: a valid `.xlsx`, but its email has nothing to do with price lists |
+| `revised/Samsung_Price_List.csv` | Same filename as the first Samsung file, one price corrected: the filename-collision test |
+
+Each supplier file is that brand's current price list with **three price changes, one new product and one product
+left out**, and each supplier writes its column headers differently, which is why Feature 2 normalises. Each supplier
+also spells **one changed model its own way**, so both of Feature 2's matching paths are exercised; every other model
+name matches the catalogue exactly. Encodings and multi-sheet layouts are not covered.
+
+| Supplier | Price changes | New product | Left out | Spelled differently |
+|---|---|---|---|---|
+| Samsung | T7 1TB ₹7,000→₹7,500 (MRP 9,999→10,499) · T7 2TB ₹12,500→₹13,000 (MRP 16,999→17,499) · 870 EVO 500GB ₹4,300→₹4,500 | T9 1TB ₹8,500 / MRP ₹11,999 | 990 EVO 1TB | `Portable SSD T7 1TB`: extra words, matched by the LLM fallback |
+| Seagate | Barracuda 2TB ₹4,300→₹4,450 · IronWolf 4TB ₹8,900→₹9,200 (MRP 11,500→11,900) · FireCuda 530 1TB ₹11,800→₹11,400 (MRP 15,500→14,900, a decrease) | IronWolf 8TB ₹15,400 / MRP ₹19,900 | One Touch 2TB | `SEAGATE BARRACUDA-2TB`: case, hyphen, brand prefix, matched by the matching key |
+| TP-Link | Archer C6 ₹2,000→₹2,100 · Archer AX55 ₹4,300→₹4,500 (MRP 6,199→6,499) · TL-SG108 ₹1,100→₹1,050 (MRP 1,599→1,499, a decrease) | Archer AX53 ₹3,400 / MRP ₹4,999 | TL-WR841N | `Archer C6 AC1200`: a marketing suffix, matched by the LLM fallback |
+
+The Samsung row reuses the T7 1TB / T7 2TB / 870 EVO 500GB / T9 1TB / 990 EVO 1TB examples in `ui-design.md`,
+including the supplier calling T7 1TB "Portable SSD T7 1TB". The generated Product ID for T9 1TB is `SAM-1578F`,
+as the design shows. The files are built from `current-price-list.json`, and the generator refuses to run if a model
+it refers to is not in that file, so a catalogue edit cannot silently change what a sample claims to be.
+`bun run mock:generate --check` does not look at this folder. `write-excel-file`, which writes the `.xlsx` files, is
+a dev dependency and cannot read spreadsheets. Feature 2 reads them with `read-excel-file`.
+
+**Sample files from before 2026-09-21 have no renamed rows.** If you generated and emailed them earlier, run
+`bun run mock:supplier-files --force` and email them again to exercise the matching. The old files still analyse
+correctly; every row simply matches by name.
+
+The procedure for sending the emails and reading the result is in
+`features/feature-1-gmail-price-list-ingestion.md` §10.
+
+## 10. Later addition (not now)
 
 A separate **Change History + Audit Log** entry will record what changed, old value → new value, when it changed, the source price list, and who approved it. It is added after the core workflow is implemented and before the final build. It is not part of this mock data.

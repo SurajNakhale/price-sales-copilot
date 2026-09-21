@@ -126,6 +126,15 @@ What it is used for:
 2. **Safe filename clashes:** `sha256` tells whether a same-named file is identical (skip) or different (save under a new name).
 3. **Context for Feature 2:** sender, subject and date tell Feature 2 which brand a file belongs to and which list is newer, without calling Gmail again.
 
+Two behaviours worth knowing, both exercised by the sample-file test in section 10:
+
+- **A different file with a taken name** is saved as `<name>__<first 8 characters of the Gmail message id>.<ext>`, for
+  example `Samsung_Price_List__18a3f2c1.csv`, never as `(2)`. The first file is never overwritten. If that name is also
+  taken, `-2`, `-3` and so on are appended.
+- **An identical file arriving in a new email** writes nothing to disk and is reported as skipped, but **still adds a
+  manifest entry** pointing at the file already saved. So `manifest.json` can hold more entries than the folder holds
+  files, and the second email's attachment shows as "already downloaded" on the next scan.
+
 The raw spreadsheet files are never modified.
 
 ## 6. Planned file map
@@ -224,6 +233,51 @@ The raw spreadsheet files are never modified.
 4. Untick one row and click Download selected: only the ticked files land in `mock-data/new-price-lists/`, with `manifest.json`.
 5. Scan again: downloaded rows show as already downloaded; the unticked one is still selectable.
 6. Disconnect: Scan returns the reconnect state.
+
+### Testing with the generated sample files
+
+`bun run mock:supplier-files` writes six files to `mock-data/sample-supplier-files/` (see `mock-data.md` §9 for what
+is in them) and prints the checklist below. Send each email **to the Gmail account the app is connected to**, from
+that account or another, attaching the file named. The subjects matter: the scan only finds an email whose subject
+has "price" or "pricing", or whose filename has "price".
+
+**Stage A: send these four, then click Scan Gmail.**
+
+| # | Subject | Attach | In the scan dialog | After Download |
+|---|---|---|---|---|
+| A1 | `Samsung price list - September 2026` | `Samsung_Price_List.csv` | listed, ticked | saved as `Samsung_Price_List.csv` |
+| A2 | `Seagate pricing update` | `Seagate_Price_List.xlsx` | listed, ticked | saved as `Seagate_Price_List.xlsx` |
+| A3 | `TP-Link price list and terms` | `TPLink_Price_List.xlsx` and `Dealer_Terms.txt` | only the `.xlsx` listed | only the `.xlsx` saved |
+| A4 | `Team lunch on Friday` | `Lunch_Menu.xlsx` | **not listed** | nothing saved |
+
+Untick A2 before the first download and check it did not land; scan again and check it is still selectable (this is
+the human-in-the-loop gate); then download it. A third scan should show A1 to A3 as "already downloaded".
+
+**Stage B: once Stage A is downloaded, send these two, then scan and download.**
+
+| # | Subject | Attach | Expected |
+|---|---|---|---|
+| B1 | `Samsung price list - resend` | `Samsung_Price_List.csv` again | listed as new; download reports it **skipped**, "Identical file already saved"; the folder is unchanged; `manifest.json` gains one entry |
+| B2 | `Samsung price list - revised` | `revised/Samsung_Price_List.csv` | listed as new; saved as `Samsung_Price_List__<8 characters>.csv`; the first Samsung file is untouched |
+
+**End state** in `mock-data/new-price-lists/`: `Samsung_Price_List.csv`, `Samsung_Price_List__<id>.csv`,
+`Seagate_Price_List.xlsx`, `TPLink_Price_List.xlsx` and `manifest.json` with **5 entries covering 4 files**.
+Then run `bun run mock:supplier-files --check-downloads` for a byte-level answer instead of a visual one.
+
+Things this may show you:
+
+- **Gmail indexing lags.** A message can take a few seconds to become searchable; scan again.
+- **The resend appears twice on the dashboard.** "New price lists" lists one row per email, and B1 adds an entry for a
+  file already saved. Showing one row per file instead is an open UI decision.
+- **A message in Spam is not scanned.** Mark it "Not spam".
+- **The filename half of the query** (`filename:price`, with no price word in the subject) is not covered above. To
+  try it, send `Seagate_Price_List.xlsx` again with the subject `September rates`. If it is not listed, Gmail did not
+  match the underscored filename: a finding about `buildGmailQuery()`, not a download bug.
+- While the consent screen is in Testing mode the refresh token expires after 7 days; reconnect in Settings.
+
+**What is and is not proven.** The save logic behind this table was rehearsed offline with the app's real
+`saveAttachment`, and every outcome above held. What that cannot show is Gmail itself: whether the search matches
+these subjects and what MIME structure real messages arrive in. That is what sending the emails tests.
 
 **Acceptance criteria:**
 

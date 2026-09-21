@@ -55,6 +55,12 @@ function toUtcDate(isoDate: string): Date | null {
   return Number.isNaN(date.getTime()) ? null : date;
 }
 
+/** "Seagate Distributor <sales@x.com>" reads better as just the display name. */
+export function senderName(from: string): string {
+  const match = /^\s*"?([^"<]*?)"?\s*</.exec(from);
+  return (match?.[1] || from).trim();
+}
+
 /** Nothing to show yet, as opposed to a real zero. */
 export const EM_DASH = "—";
 

@@ -70,6 +70,27 @@ export function earliestInvoiceDate(sales: SalesLine[]): string | null {
   );
 }
 
+export interface ProductSales {
+  units: number;
+  /** Latest invoice date with this product, or null if it never sold. */
+  lastSold: string | null;
+}
+
+/**
+ * Units and last sale per Product ID. The evidence shown beside a missing
+ * product, so the reviewer can tell a slow mover from a best seller before
+ * deciding whether to deactivate it.
+ */
+export function salesByProduct(sales: SalesLine[]): Record<string, ProductSales> {
+  const out: Record<string, ProductSales> = {};
+  for (const line of sales) {
+    const entry = (out[line.productId] ??= { units: 0, lastSold: null });
+    entry.units += line.quantity;
+    if (entry.lastSold === null || line.date > entry.lastSold) entry.lastSold = line.date;
+  }
+  return out;
+}
+
 /**
  * Revenue and units per brand, biggest first by the measure given.
  *

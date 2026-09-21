@@ -17,18 +17,21 @@ import {
   totalUnits,
   weeklyBuckets,
 } from "@/lib/analytics";
+import { summarizeReviews } from "@/lib/compare";
 import { readProducts, readSales } from "@/lib/data/mock-data";
 import { isConnected } from "@/lib/google/oauth";
 import { readManifest } from "@/lib/storage/new-price-lists";
+import { listReviews } from "@/lib/storage/price-reviews";
 
 // Connection state, the manifest and the datasets are read from disk on every
 // request.
 export const dynamic = "force-dynamic";
 
 export default async function Dashboard({ searchParams }: PageProps<"/">) {
-  const [connected, manifest, products, sales, params] = await Promise.all([
+  const [connected, manifest, reviews, products, sales, params] = await Promise.all([
     isConnected(),
     readManifest(),
+    listReviews(),
     readProducts(),
     readSales(),
     searchParams,
@@ -45,9 +48,7 @@ export default async function Dashboard({ searchParams }: PageProps<"/">) {
     productsTotal: products.length,
     from: earliestInvoiceDate(sales),
     to: latestInvoiceDate(sales),
-    // Both come from Feature 2, which does not exist yet.
-    priceChanges: null,
-    needsReview: null,
+    reviews: summarizeReviews(reviews),
   });
 
   return (
@@ -73,12 +74,13 @@ export default async function Dashboard({ searchParams }: PageProps<"/">) {
           brands={brandTotals(sales, products)}
         />
 
-        <PriceListsCard entries={manifest} connected={connected} limit={5} />
+        <PriceListsCard entries={manifest} reviews={reviews} connected={connected} limit={5} />
       </div>
 
       <Button
         size="lg"
         className="fixed right-6 bottom-6 h-11 gap-2 rounded-full px-4 shadow-lg"
+        nativeButton={false}
         render={<Link href="/copilot" />}
       >
         <Sparkles />

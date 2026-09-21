@@ -85,6 +85,7 @@ export default async function Sales({ searchParams }: PageProps<"/sales">) {
                 size="sm"
                 variant="outline"
                 disabled={page <= 1}
+                nativeButton={false}
                 render={<Link href={`/sales?page=${page - 1}`} />}
               >
                 Previous
@@ -93,6 +94,7 @@ export default async function Sales({ searchParams }: PageProps<"/sales">) {
                 size="sm"
                 variant="outline"
                 disabled={page >= pageCount}
+                nativeButton={false}
                 render={<Link href={`/sales?page=${page + 1}`} />}
               >
                 Next

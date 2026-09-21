@@ -1,8 +1,8 @@
 # Architecture
 
-**Status:** Proposed design (2026-09-20). Feature 1 is specified in detail in
-`features/feature-1-gmail-price-list-ingestion.md`. Features 2 to 4 are designed here at module level and get their own
-specs when they are built. Items marked "proposed" are not settled yet (see section 12).
+**Status:** Features 1 and 2 built (2026-09-21), each specified in detail in `features/`. Features 3 and 4 are
+designed here at module level and get their own specs when they are built. Items marked "proposed" are not settled yet
+(see section 12).
 
 ## 1. Overview
 
@@ -63,30 +63,35 @@ Deterministic core      lib/llm          lib/google +        lib/storage
 
 ## 4. Layers and code layout
 
-Proposed layout. Feature 1 file names are exactly those of its spec.
+Features 1 and 2 are laid out as built; the rest is proposed. File names are exactly those of the feature specs.
 
 ```text
 app/
-  layout.tsx, page.tsx              dashboard; Feature 1 panel
-  review/  drafts/  ask/            pages for Features 2 to 4 (added when built)
+  layout.tsx, page.tsx              shell and dashboard
+  price-updates/, price-updates/[id]/  the list, and the 5-step workflow for one file (Features 1 → 2 → 3)
+  copilot/                          Feature 4 (added when built)
   _components/                      feature UI components
   api/
     auth/google/                    connect, callback, disconnect            (Feature 1)
     ingest/scan, ingest/download    scan Gmail, download selected            (Feature 1)
-    prices/                         normalize, changes, approve              (Feature 2)
+    prices/[id]/analyse, approve    normalise + compare, approve             (Feature 2)
     drafts/                         create the Gmail draft                    (Feature 3)
     copilot/ask                     question to steps to answer               (Feature 4)
 components/ui/                      shadcn/ui primitives (generated)
 lib/
   config.ts                         env and constants (paths, Gmail query, model)
-  types.ts                          shared types and Zod schemas
-  product-id.ts                     the ONE Product ID rule (pure; also used by the mock data script)
+  types.ts                          shared types
+  product-id.ts                     the ONE Product ID rule and the brand codes (pure; also used by the mock data script)
+  matching-key.ts  file-id.ts       pure helpers for matching rows and naming price lists (Feature 2)
+  parse/                            csv and xlsx to rows of cells (Feature 2)
   google/oauth.ts                   OAuth client and token file
   gmail/                            search and attachments (Feature 1), drafts (Feature 3)
-  llm/                              Gemini client, prompts, output schemas
+  llm/                              Gemini client, prompts, Zod output schemas, the LlmPort interface
   storage/                          the ONLY code that reads or writes data files
-  ingest.ts  normalize.ts  compare.ts  drafts.ts  copilot/     feature services
+  normalize.ts  match.ts  compare.ts   Feature 2's deterministic core (pure; match.ts calls the LLM through a port)
+  ingest.ts  analyse.ts  approve.ts  drafts.ts  copilot/     feature services
 scripts/generate-mock-data.ts       mock data generator and reset
+scripts/generate-supplier-files.ts  sample supplier files to email to yourself
 mock-data/                          inputs and source-of-truth data files
 .data/                              gitignored runtime state
 context/                            project documentation
@@ -109,8 +114,8 @@ context/                            project documentation
 | Dealers | `mock-data/dealers/dealers.json` | Nothing at runtime | Read-only |
 | Sales transactions | `mock-data/sales/sales-data.json` | Nothing at runtime | Read-only. "Today" is its latest invoice date |
 | Raw new price lists and `manifest.json` | `mock-data/new-price-lists/` | Feature 1 | Downloaded files are gitignored |
-| Normalized price lists | Proposed: `mock-data/normalized-price-lists/` | Feature 2 | Location confirmed in Feature 2 |
-| Pending changes (proposed changes and the user's decisions so far) | Proposed: `.data/pending-changes.json` | Feature 2 | Working state between compare and approve. Gitignored |
+| Normalized price lists | `.data/normalized/<fileId>.json`, one per downloaded file | Feature 2 analysis | The separate normalised object the comparison reads. Temporary working state, gitignored; overwritten by Re-analyse |
+| Reviews: pending changes, then what was approved | `.data/reviews/<fileId>.json`, one per downloaded file | Feature 2 analysis and approval | Items with old and new values; once approved, the applied item IDs, which Feature 3 reads. Gitignored |
 | Change history and audit log | Later addition. Proposed: `.data/change-history.json`, append-only | Feature 2 approval | What changed, old to new value, when, source list, who approved |
 | Google tokens | `.data/google-tokens.json` | OAuth callback | Gitignored |
 | Secrets | `.env.local` | You | Gitignored |
@@ -146,26 +151,31 @@ No LLM is used. Full detail, including the search rule, duplicate handling and e
 
 ```text
 mock-data/new-price-lists/<file>.xlsx or .csv
-   │ parse (code)                     headers and rows; values only, formulas are never evaluated
+   │ parse (code)                     rows of cells; values only, formulas are never evaluated (read-excel-file)
    ▼
-LLM: propose a column mapping         input: headers, a few sample rows, sender/brand hint
-   │ validate against schema          unknown columns are rejected
+LLM: propose a column mapping         input: the first 15 rows, filename, sender; output: header row, brand,
+   │                                  and which header is model / category / dealer price / MRP
+   │ validate (Zod + code)            columns must exist in the header row and be distinct; one retry with the reason
    ▼
-normalize (code)                      apply the mapping, parse numbers, copy prices verbatim from the cells
+normalize (code)                      apply the mapping, parse numbers, copy prices verbatim from the cells;
+   │                                  unusable rows become issues shown to the reviewer
    ▼
-match rows to current products        proposed: exact or normalized name match in code first;
-   │                                  unresolved rows: LLM proposes a match, code checks that the Product ID exists;
-   │                                  still unresolved: treated as a new model
+match rows to current products        matching key (case, punctuation, brand prefix, unit spacing) in code first;
+   │                                  unresolved rows: LLM proposes a match, code checks the ID is an unclaimed
+   │                                  product of that brand; still unresolved: a new model with a generated ID
    ▼
-compare (code)                        increase, decrease, new, missing, unchanged
+.data/normalized/<fileId>.json        the separate normalised object
    ▼
-generate Product IDs (code)           each new model gets an ID by the same rule as the existing products
+compare (code)                        price change (up or down), new, missing, unchanged
    ▼
-pending changes file  ──►  Review UI: the user decides each item
-                                      price change: apply?   new model: add?   missing model: deactivate?
+.data/reviews/<fileId>.json  ──►  Review UI: the user decides each item
+                                      price change: apply?   new model: add?   missing model: keep or deactivate?
    ▼
-approve (code)                        apply ONLY the approved items, atomic write, audit entry
+approve (code)                        re-check against the current list; apply ONLY the approved items in one
+                                      atomic write, or nothing if any of them is out of date
 ```
+
+The details, edge cases and data shapes are in `features/feature-2-normalise-compare-approve.md`.
 
 The LLM never types a price. Numbers come from the spreadsheet cells and are copied by code. A wrong or malicious LLM answer
 can at worst propose a bad mapping or match, which schema validation or the reviewer catches before anything is written.
@@ -175,8 +185,9 @@ characters of `sha256("<brand>|<model>")` (input lowercased), for example `SAM-B
 The rule lives in one pure module, `lib/product-id.ts`, shared with the mock data script, so generated and mock IDs cannot
 drift. Generation is deterministic; if an ID already exists, it is re-hashed with a counter until it is unique. The reviewer
 sees the new ID in the review table, and it is written to the current price list only if the user approves adding the
-product. Brand codes come from a small table in `lib/config.ts` (Seagate `SEG`, Samsung `SAM`, TP-Link `TPL`); a brand
-without a code stops the run with a message asking for one to be added. Features 3 and 4 then join sales and products on
+product. Brand codes come from a small table, `BRAND_CODES` in `lib/product-id.ts` (Seagate `SEG`, Samsung `SAM`,
+TP-Link `TPL`); it sits there rather than in `lib/config.ts` because `config.ts` is `server-only` and the mock-data script
+cannot import it. A file for a brand without a code stops the run with a message asking for one to be added. Features 3 and 4 then join sales and products on
 the Product ID as usual.
 
 **Missing products are deactivated, never deleted.** A product that the supplier's file no longer lists is not removed from
@@ -267,7 +278,12 @@ are and the LLM cannot be talked into arbitrary actions. Whole datasets never go
   lists**, since Feature 2 sends real file content.
 - **Two separate Google credentials.** Gmail uses an OAuth client (client ID and secret plus user consent). Gemini uses an API key.
 - **Verify when building.** These APIs change quickly (the docs now recommend a newer API than most examples online). Check
-  call shapes against Google's current docs when building Feature 2.
+  call shapes against Google's current docs when building each feature.
+- **As built in Feature 2** (`lib/llm/client.ts`, `@google/genai` 2.23): `ai.interactions.create({ model,
+  system_instruction, input, response_format: { type: "text", mime_type: "application/json", schema }, store: false })`,
+  reading `output_text`. The schema is `z.toJSONSchema` of the Zod schema without `$schema`, `additionalProperties` and
+  Zod's safe-integer bounds, which the Gemini docs do not list. Checked against /structured-output on 2026-09-21. Not
+  yet run against the live API: no key was configured when it was built.
 
 Sources checked 2026-09-20: ai.google.dev/gemini-api/docs/quickstart, /structured-output, /interactions-overview, /models,
 /pricing and /terms.
@@ -285,21 +301,26 @@ Sources checked 2026-09-20: ai.google.dev/gemini-api/docs/quickstart, /structure
 
 ## 9. Errors, logging and testing
 
-- **Errors.** A small set of typed errors (not connected, missing configuration, invalid LLM output, validation failure) that
-  route handlers map to an HTTP status and `{ error, message }`. The UI turns each into an actionable state. Logs go to the
+- **Errors.** A small set of typed errors in `lib/errors.ts` (not connected 401, missing configuration 500, bad request
+  400, not found 404, conflict 409, unusable file 422, invalid LLM output 502) that route handlers map to an HTTP status
+  and `{ error, message }` through `lib/api-errors.ts`. The UI turns each into an actionable state. Logs go to the
   server console; there is no external telemetry.
 - **Testing.** Unit-test the deterministic core (comparison, plan execution, date resolution, filename sanitizing, dedup)
   with `bun test`, which needs no extra dependency. LLM calls sit behind `lib/llm`, so tests use fakes.
   `bun run mock:generate --check` validates the baseline data. Gmail and Gemini end-to-end runs are manual. A feature is
-  done only when `bunx tsc --noEmit`, `bun run lint` and `bun run build` pass. No test runner is set up yet.
+  done only when `bunx tsc --noEmit`, `bun run lint` and `bun run build` pass.
+- **Test isolation.** `bun test` shares one module cache across test files, so `lib/config.ts` keeps the paths of whichever
+  file imported it first. Tests that write data files move `process.cwd()` to a temp folder before importing anything,
+  write fixtures through the config constants, and refuse to run if those point inside the project
+  (`test/feature-2.test.ts`).
 
 ## 10. Feature-to-module map
 
 | Feature | Page | Routes | Modules | Data | External |
 |---|---|---|---|---|---|
-| 1 Read Gmail | `/` | `auth/google/*`, `ingest/scan`, `ingest/download` | ingest, gmail, google, storage | new-price-lists, manifest | Gmail (read) |
-| 2 Clean, compare, approve | `/review` | `prices/*` | normalize, compare, llm, storage | current price list, normalized lists, pending changes | Gemini |
-| 3 Dealer drafts | `/drafts` | `drafts/*` | drafts, gmail (compose), llm | sales, dealers | Gemini, Gmail (compose) |
+| 1 Read Gmail | `/`, `/price-updates` | `auth/google/*`, `ingest/scan`, `ingest/download` | ingest, gmail, google, storage | new-price-lists, manifest | Gmail (read) |
+| 2 Clean, compare, approve | `/price-updates/[id]` (steps 2–3) | `prices/[id]/analyse`, `prices/[id]/approve` | analyse, approve, normalize, match, compare, llm, storage | current price list, normalized files, reviews | Gemini |
+| 3 Dealer drafts | `/price-updates/[id]` (steps 4–5) | `drafts/*` | drafts, gmail (compose), llm | reviews (applied items), sales, dealers | Gemini, Gmail (compose) |
 | 4 Sales Q&A | `/ask` | `copilot/ask` | copilot (planner and executor), llm | sales, dealers, current price list, change history | Gemini |
 
 ## 11. Key decisions
@@ -320,13 +341,20 @@ Sources checked 2026-09-20: ai.google.dev/gemini-api/docs/quickstart, /structure
 
 | # | Question | Decide in |
 |---|---|---|
-| 1 | Matching incoming rows to existing products: the proposal in 6.2, or another approach? | Feature 2 |
-| 2 | Where normalized price lists and pending changes live (proposals in section 5) | Feature 2 |
-| 3 | Spreadsheet parsing library for `.xlsx` (must be actively maintained) | Feature 2 |
 | 4 | One dealer email draft, or one per group of dealers who bought the same affected models | Feature 3 |
 | 5 | Who writes the final answer sentence in Feature 4 | Feature 4 |
 | 6 | Where the audit log lives and its format | After the core workflow |
 | 7 | The 90-day window covers all generated sales, so the filter cannot exclude anyone. Extend the sales history to test it | Before Feature 3 |
 | 8 | Move to a paid Gemini key before using real supplier files | Before Feature 2 on real data |
 
-Closed: what "remove a missing product" means is decided in 6.2 — deactivate with an optional `status` field, never delete.
+Closed:
+
+- What "remove a missing product" means is decided in 6.2: deactivate with an optional `status` field, never delete.
+- Decisions 1–3 were settled with Feature 2 on 2026-09-21 (details in its spec, §2):
+  - **Matching:** code first by matching key, then an LLM fallback whose answers code validates.
+  - **Where files live:** normalised files and reviews go in `.data/normalized/` and `.data/reviews/`.
+  - **`.xlsx` parser:** `read-excel-file`. It is the only actively maintained candidate among those checked: 9.3.10 was
+    released 2026-08-10, with 37 releases since 2025-09. By contrast `exceljs` 4.4.0 dates from 2023-10, SheetJS `xlsx` on
+    npm 0.18.5 from 2022-03 and `xlsx-populate` from 2020, and the `@e965/xlsx` fork has had no release since 2024-07.
+    It reads cached formula values, never evaluating them, and returns every sheet. Feature 2 uses the first sheet with
+    content. `write-excel-file` stays a dev dependency that only writes the sample files.

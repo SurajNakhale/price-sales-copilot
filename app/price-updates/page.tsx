@@ -1,14 +1,20 @@
-import { NotBuiltYet } from "@/app/_components/NotBuiltYet";
 import { PageHeader } from "@/app/_components/PageHeader";
 import { PriceListsCard } from "@/app/_components/PriceListsCard";
 import { ScanDialog } from "@/app/_components/ScanDialog";
+import { WorkflowStepper } from "@/app/_components/WorkflowStepper";
 import { isConnected } from "@/lib/google/oauth";
 import { readManifest } from "@/lib/storage/new-price-lists";
+import { listReviews } from "@/lib/storage/price-reviews";
 
 export const dynamic = "force-dynamic";
 
+/** Every price list received, with where each one is in the workflow (ui-design.md §2.4). */
 export default async function PriceUpdates() {
-  const [connected, manifest] = await Promise.all([isConnected(), readManifest()]);
+  const [connected, manifest, reviews] = await Promise.all([
+    isConnected(),
+    readManifest(),
+    listReviews(),
+  ]);
 
   return (
     <>
@@ -19,15 +25,8 @@ export default async function PriceUpdates() {
       />
 
       <div className="flex flex-col gap-3.5 p-7">
-        <PriceListsCard entries={manifest} connected={connected} />
-
-        <NotBuiltYet feature="Features 2 and 3" title="Reviewing and approving a price list">
-          <p>
-            Downloading a file is as far as this goes today. Opening one to see
-            its price changes, new products and missing products needs Feature 2,
-            and drafting the dealer email needs Feature 3.
-          </p>
-        </NotBuiltYet>
+        <WorkflowStepper />
+        <PriceListsCard entries={manifest} reviews={reviews} connected={connected} />
       </div>
     </>
   );

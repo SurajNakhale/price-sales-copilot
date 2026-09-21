@@ -39,7 +39,7 @@ interface NavItem {
 
 export interface AppSidebarProps {
   connected: boolean;
-  /** Items in the Price Updates flow waiting on a person. Nothing produces these until Feature 2. */
+  /** Items in the Price Updates flow waiting on a person: unapproved Feature 2 review items. */
   needsReview: number;
   counts: { products: number; dealers: number; sales: number };
 }

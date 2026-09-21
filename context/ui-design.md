@@ -1,8 +1,9 @@
 # UI Design
 
-**Status:** Partly built (2026-09-21). The shell, dashboard, data views, Settings and the Feature 1
-scan dialog exist. The Price Updates workflow and the Sales Copilot are placeholder pages until
-Features 2–4 are written. See `current-state.md`.
+**Status:** Partly built (2026-09-21). The shell, dashboard, data views, Settings, the Feature 1
+scan dialog and the Price Updates workflow up to step 3 (Feature 2) exist, and were checked in
+headless Chrome at 1440 wide. Steps 4–5 (Feature 3) and the Sales Copilot (Feature 4) are not
+built yet. See `current-state.md`.
 **Artboards:** https://claude.ai/artifact/Lkg3pQwdwu91aycaZ3KeTL (private; share it from the page's Share menu if someone else needs it)
 
 This is the plan for the whole interface. It follows `project-overview.md` (what the app does),
@@ -120,6 +121,14 @@ Opens from Scan Gmail. This is the step the original brief skipped, and it alrea
 The stepper legend, then every file received with brand, filename, received time, changes and status.
 The change count is broken down inline ("3 price · 1 new · 1 missing") so the number means something.
 
+As built: the filename links to the workflow page, and the last column holds the row's one action —
+**Analyse**, **Review** (filled, the only primary button in the table), **View** or **Retry**. The
+dashboard's "New price lists" card is the same component, limited to five rows.
+
+**Stepper labels as built** (`WorkflowStepper`), naming who acts in each step. Step 2 reads
+"LLM maps · app copies" rather than just "LLM", because the model only names the columns and the app
+copies every price. Steps 4–5 show a lock and "Feature 3 · after approval" until the file is approved.
+
 ### 2.5 Workflow step 3 — Review & approve
 
 The heart of the app.
@@ -144,6 +153,29 @@ Approvals arrive **unticked** (writing a price is neither). That asymmetry is de
 **One commit, not two.** The brief had a per-row `[Approve]` button *and* a footer `[Approve Selected]`, which
 leaves it ambiguous whether the row button writes immediately. Checkboxes plus one commit matches the rule that
 nothing is written until you approve, and makes a partial approval ("these three, not that one") the normal case.
+
+**As built (Feature 2).** Details the build added:
+
+- **Step 2 comes first.** Before analysis, the page shows a card with an explicit **Analyse** button. The card says
+  what goes to Gemini (the first 15 rows, the filename and the sender) and that the LLM never types a number.
+- **Header.** The file name is the title. The sub-line reads "From Samsung India · received 20 Sep 2026 · Samsung ·
+  sheet …", and the status sits on the right. A ghost "‹ Price Updates" link above the stepper does the job of the
+  breadcrumb.
+- **Summary strip.** Ends with **Re-analyse** (outline, small). It is also how an out-of-date review is refreshed.
+- **Match note.** Sits under the model: *Supplier wrote "Portable SSD T7 1TB" · matched by the LLM, checked by the
+  app*, or "· matched by name" when the matching key found it. Nothing is shown when the names are identical.
+- **Change column.** The dealer-price delta. When only the MRP moved, the pill is prefixed "MRP".
+- **Keep / Deactivate.** A two-option control styled like the tab list, with the chosen option raised on a muted
+  track. Plain ghost buttons were too faint to tell apart.
+- **Footer.** Reads "Nothing selected yet" and a disabled **Approve changes** at zero, then "1 price change · 1 new
+  product · 1 deactivation selected" and **Approve 3 changes**. Selections survive switching tabs.
+- **Skipped rows.** Rows the app could not use are listed in an alert, with row number and reason, above the tabs.
+- **Out of date.** When another approval changed a product this file also changes, a destructive alert names each
+  item ("T7 1TB has been repriced since this file was analysed.") and offers **Re-analyse**. Selection and Approve
+  are disabled until then.
+- **After approval.** An alert reads "Approved 21 Sep 2026: 3 of 5 applied", with what that did in product terms.
+  The tables turn read-only: the checkbox column becomes **Applied** / **Not applied**, and the decision column
+  **Deactivated** / **Kept**.
 
 ### 2.6 Workflow steps 4–5 — Affected dealers & draft email
 
@@ -183,11 +215,13 @@ Suggested questions sit above the thread. The input is pinned at the bottom. A p
 | Scanning | Dialog | Button shows "Scanning…", table skeleton |
 | Scan found nothing | Dialog | "No price lists found" and what the search looks for |
 | Downloaded | list row | Status `Downloaded`, changes **—**, action **Analyse** |
-| Analysing | list row | Status `Analysing`, progress, action disabled |
+| Analysing | workflow page | Status `Analysing` (blue) on the Analyse card, button reads "Analysing…" and is disabled. It lasts only as long as the request, so the list never shows it |
 | Needs review | list row, badge | Status `Needs review`, action **Review** |
 | Approved | list row | Status `Approved`, breakdown of what was applied |
 | Partly approved | list row | `Approved` plus "3 of 5 applied" |
-| Failed | list row | Status `Failed` with the reason inline, action **Retry** |
+| No changes | list row, workflow page | Status `No changes` (grey), action **View**; the page says there is nothing to approve |
+| Out of date | workflow page | Destructive alert naming each outdated item, **Re-analyse**; Approve disabled |
+| Failed | list row, workflow page | Status `Failed` with the reason inline, action **Retry**; the page shows the full reason above the Retry button |
 | Token expired | any API call | Alert: access expired, reconnect (7-day Testing-mode expiry) |
 | Nothing selected | Review footer | Summary reads "Nothing selected yet"; commit disabled |
 | Copilot thinking | Copilot | "Working out the steps…" |
@@ -245,20 +279,26 @@ label 11 uppercase. Money is lakh on tiles (₹43.9L) and full in tables (₹7,5
 ## 6. shadcn components
 
 Installed: `alert`, `badge`, `button`, `card`, `chart`, `checkbox`, `dialog`, `input`, `separator`,
-`sheet`, `sidebar`, `skeleton`, `table`, `tooltip`. Adding `sidebar` brought `sheet`, `input` and
-`skeleton` with it; `chart` brought `recharts`.
+`sheet`, `sidebar`, `skeleton`, `table`, `tabs`, `tooltip`. Adding `sidebar` brought `sheet`, `input` and
+`skeleton` with it; `chart` brought `recharts`. `tabs` came with Feature 2 (the three change types).
 
-Still to add, when the feature that needs them is built: `tabs` (the three change types, Feature 2),
-`dropdown-menu` (filters), `sonner` (draft-created toast, Feature 3).
+Still to add, when the feature that needs them is built: `dropdown-menu` (filters), `sonner`
+(draft-created toast, Feature 3).
 
 ```bash
-bunx --bun shadcn@latest add tabs dropdown-menu sonner
+bunx --bun shadcn@latest add dropdown-menu sonner
 ```
 
-The install uses Base UI, not Radix, which changes two things in practice: `Checkbox` takes
-`onCheckedChange(checked: boolean)` — a plain boolean, not Radix's `boolean | "indeterminate"`, with
-`indeterminate` as its own prop — and composition uses `render={<Link href="…" />}` rather than
-`asChild`.
+The install uses Base UI, not Radix, which changes three things in practice:
+
+- **`Checkbox`** takes `onCheckedChange(checked: boolean)`, a plain boolean rather than Radix's
+  `boolean | "indeterminate"`, with `indeterminate` as its own prop.
+- **Composition** uses `render={<Link href="…" />}` rather than `asChild`.
+- **A `Button` rendered as a link needs `nativeButton={false}`**, as in
+  `<Button nativeButton={false} render={<Link href="…" />}>`. Without it, Base UI logs an error in the browser and
+  the Next dev overlay shows "1 Issue". `SidebarMenuButton` is built on `useRender` and does not need it.
+- **`Tabs`** only renders the active panel, so client state that must survive a tab switch (the review's
+  selections) lives above the tabs.
 
 `hooks/use-mobile.ts` was rewritten after generation: the generated version set state inside an
 effect, which fails `react-hooks/set-state-in-effect`. It now uses `useSyncExternalStore`.
@@ -272,8 +312,10 @@ effect, which fails `react-hooks/set-state-in-effect`. It now uses `useSyncExter
 | Total revenue, Units sold | `mock-data/sales/sales-data.json` |
 | 30 products, price columns | `mock-data/current-price-lists/current-price-list.json` |
 | Dealers, states, emails | `mock-data/dealers/dealers.json` |
-| Received / sender / filename per file | `mock-data/new-price-lists/manifest.json` (written by Feature 1 on the first download; absent until then). It records **no brand**, so that column shows `—` until Feature 2 normalises the file |
-| Changes, new, missing | Feature 2 comparison output |
+| Received / sender / filename per file | `mock-data/new-price-lists/manifest.json` (written by Feature 1 on the first download; absent until then). It records **no brand**, so that column shows `—` until Feature 2 analyses the file |
+| Brand, changes, new, missing, status per file | `.data/reviews/<fileId>.json`, written by Feature 2's analysis and approval |
+| Price changes and Needs review tiles, sidebar badge | Every review: price changes across analysed files; items in files still needing review |
+| Last sold, units sold (missing products) | `mock-data/sales/sales-data.json`, per Product ID |
 | Affected dealers | sales lines for the changed products, last 90 days from the latest invoice date |
 | "Today" | the latest invoice date, `2026-09-18` — never the wall clock |
 
@@ -312,5 +354,7 @@ Regenerate the baseline with `bun run mock:generate --force`; check it with `--c
   neutral grey, and no dark artboards exist yet.
 - Mobile: designed at 1440. The sidebar collapses to a sheet and tables scroll horizontally, but no phone
   artboards exist yet.
-- The brand column on the price-list table needs a brand on `ManifestEntry`, or a guess from the sender
-  and filename, if it is to show anything before Feature 2 runs.
+- The brand column shows the brand once a file is analysed (it comes from the review). Before that it is
+  `—`; showing it earlier would need a brand on `ManifestEntry`, or a guess from the sender and filename.
+- The Needs review tile is drawn with an amber ring, not the amber ground and border §2.1 describes.
+  Unchanged since the dashboard was built; reconcile one way or the other.

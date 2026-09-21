@@ -4,8 +4,12 @@ import { NextResponse } from "next/server";
 
 import {
   BadRequestError,
+  ConflictError,
+  InvalidLlmOutputError,
   MissingConfigError,
   NotConnectedError,
+  NotFoundError,
+  UnusableFileError,
   errorMessage,
 } from "@/lib/errors";
 import type { ApiError } from "@/lib/types";
@@ -33,7 +37,35 @@ export function errorResponse(error: unknown): NextResponse<ApiError> {
     );
   }
 
-  console.error("Unexpected error in a Feature 1 route:", error);
+  if (error instanceof NotFoundError) {
+    return NextResponse.json(
+      { error: "not_found", message: error.message },
+      { status: 404 },
+    );
+  }
+
+  if (error instanceof ConflictError) {
+    return NextResponse.json(
+      { error: "conflict", message: error.message },
+      { status: 409 },
+    );
+  }
+
+  if (error instanceof UnusableFileError) {
+    return NextResponse.json(
+      { error: "unusable_file", message: error.message },
+      { status: 422 },
+    );
+  }
+
+  if (error instanceof InvalidLlmOutputError) {
+    return NextResponse.json(
+      { error: "invalid_llm_output", message: error.message },
+      { status: 502 },
+    );
+  }
+
+  console.error("Unexpected error in an API route:", error);
   return NextResponse.json(
     { error: "internal", message: errorMessage(error) },
     { status: 500 },

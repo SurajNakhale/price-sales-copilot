@@ -25,7 +25,7 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { formatDate } from "@/lib/format";
+import { formatDate, senderName } from "@/lib/format";
 import type { ApiError, Candidate, IngestReport } from "@/lib/types";
 
 function rowKey(row: { messageId: string; partId: string }): string {
@@ -37,12 +37,6 @@ function formatSize(bytes: number): string {
   if (bytes < 1024) return `${bytes} B`;
   if (bytes < 1024 * 1024) return `${Math.round(bytes / 1024)} KB`;
   return `${(bytes / 1024 / 1024).toFixed(1)} MB`;
-}
-
-/** "Seagate Distributor <sales@x.com>" reads better as just the display name. */
-function senderName(from: string): string {
-  const match = /^\s*"?([^"<]*?)"?\s*</.exec(from);
-  return (match?.[1] || from).trim();
 }
 
 /**

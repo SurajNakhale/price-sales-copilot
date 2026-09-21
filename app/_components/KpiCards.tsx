@@ -1,4 +1,5 @@
 import { Card, CardContent } from "@/components/ui/card";
+import { describeCounts, type ReviewTotals } from "@/lib/compare";
 import { EM_DASH, formatDate, formatMoneyShort, formatNumber } from "@/lib/format";
 
 export interface Kpi {
@@ -19,9 +20,9 @@ export function buildKpis(input: {
   from: string | null;
   to: string | null;
   /** Null until Feature 2 has analysed a file. */
-  priceChanges: number | null;
-  needsReview: number | null;
+  reviews: ReviewTotals | null;
 }): Kpi[] {
+  const { reviews } = input;
   const period =
     input.from && input.to
       ? `${formatDate(input.from)} to ${formatDate(input.to)}`
@@ -40,20 +41,22 @@ export function buildKpis(input: {
     },
     {
       label: "Price changes",
-      value: input.priceChanges === null ? EM_DASH : formatNumber(input.priceChanges),
+      value: reviews === null ? EM_DASH : formatNumber(reviews.priceChanges),
       note:
-        input.priceChanges === null
-          ? "Detected in the latest batch, once a file is analysed"
-          : "Detected in the latest analysed batch",
+        reviews === null
+          ? "Needs a price list from Gmail"
+          : `in ${reviews.analysedFiles} analysed ${reviews.analysedFiles === 1 ? "file" : "files"}`,
     },
     {
       label: "Needs review",
-      value: input.needsReview === null ? EM_DASH : formatNumber(input.needsReview),
+      value: reviews === null ? EM_DASH : formatNumber(reviews.needsReview.total),
       note:
-        input.needsReview === null
-          ? "Items awaiting your decision. None yet"
-          : "Items awaiting your decision",
-      attention: (input.needsReview ?? 0) > 0,
+        reviews === null
+          ? "Needs a price list from Gmail"
+          : reviews.needsReview.total === 0
+            ? "Nothing waiting on you"
+            : `${describeCounts(reviews.needsReview)} — review`,
+      attention: (reviews?.needsReview.total ?? 0) > 0,
     },
   ];
 }
@@ -64,7 +67,14 @@ export function KpiCards({ items }: { items: Kpi[] }) {
       {items.map((item) => (
         <Card
           key={item.label}
-          className={item.attention ? "ring-2 ring-[var(--status-warn)]" : undefined}
+          className={
+            item.attention
+              ? "ring-2 ring-[var(--status-warn)]"
+              : item.value === EM_DASH
+                ? // A number that cannot exist yet: — on a dashed border, never 0.
+                  "border border-dashed border-border ring-0"
+                : undefined
+          }
         >
           <CardContent className="space-y-1">
             <p className="text-[11px] font-medium tracking-wide text-muted-foreground uppercase">
