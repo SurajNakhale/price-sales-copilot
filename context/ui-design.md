@@ -2,8 +2,8 @@
 
 **Status:** Partly built (2026-09-21). The shell, dashboard, data views, Settings, the Feature 1
 scan dialog and the Price Updates workflow up to step 3 (Feature 2) exist, and were checked in
-headless Chrome at 1440 wide. Steps 4–5 (Feature 3) and the Sales Copilot (Feature 4) are not
-built yet. See `current-state.md`.
+headless Chrome at 1440 wide. The Sales Copilot (Feature 4) is built (§2.7) but has not been
+looked at in a browser. Steps 4–5 (Feature 3) are not built yet. See `current-state.md`.
 **Artboards:** https://claude.ai/artifact/Lkg3pQwdwu91aycaZ3KeTL (private; share it from the page's Share menu if someone else needs it)
 
 This is the plan for the whole interface. It follows `project-overview.md` (what the app does),
@@ -45,8 +45,8 @@ A sidebar, because the app is two workflows and a set of data views, not one pag
 
 **Sidebar rules.** The Price Updates badge counts items waiting on a person, and disappears at zero.
 Data rows carry a plain count. Gmail status and Settings sit in the footer — the `•••` menu from the brief is
-gone, since Disconnect belongs in Settings. Before Gmail is connected, Price Updates and Sales Copilot are
-visible but inert, so the shape of the app is legible from the first screen.
+gone, since Disconnect belongs in Settings. Before Gmail is connected, Price Updates is visible but inert,
+so the shape of the app is legible from the first screen. Sales Copilot works regardless: it needs Gemini, not Gmail.
 
 ### Workflow 1 — Price Updates (Features 1 → 2 → 3)
 
@@ -202,13 +202,31 @@ Every answer has four parts, in this order:
 Suggested questions sit above the thread. The input is pinned at the bottom. A pending question shows
 "Working out the steps…", not a spinner alone.
 
+**As built** (`CopilotChat`, `CopilotAnswer`):
+
+- **Steps** is a native `<details open>`, one entry per tool call. Each lists the sentences code wrote from the
+  arguments and the result ("Kept lines where brand is Samsung: 65 lines, 46 invoices, 10 products, 16 dealers"), and
+  a closed "Arguments the model sent" block with the raw JSON. A call the app rejected is badged **rejected** with the
+  reason; the model was told and may have corrected itself in the next step.
+- **Tables**: one per successful call, titled in words ("Sales where brand is Samsung, 2 Jul 2026 – 18 Sep 2026, by
+  dealer"), with footnotes for totals, "showing 5 of 16", groups with no sales, and caveats such as a partial month.
+- **The sentence** is followed by where it came from: written by Gemini and checked, written by the app from the
+  results (with the reason when the model's own sentence failed the number check), or "no query was run".
+- **Copy table** copies the last table as tab-separated text, so it pastes into a spreadsheet as cells; **Download
+  CSV** saves it. A meta line gives the model, rounds, queries and time.
+- A line under the input says what goes to Gemini: the question and the query results, never dealer emails or the
+  raw files. The thread is not stored; reloading starts a new one. Follow-ups carry the last 3 answered pairs.
+- The copilot needs Gemini, not Gmail. Without `GEMINI_API_KEY` the page shows a setup notice and the input is
+  disabled. The dashboard's floating button is a link to this page, not a side panel.
+
 ---
 
 ## 3. States
 
 | State | Where | What is shown |
 |---|---|---|
-| Not connected | everywhere | Connect card; Price Updates and Copilot inert |
+| Not connected | everywhere | Connect card; Price Updates inert. The Copilot still works: it needs Gemini, not Gmail |
+| No Gemini key | Copilot | Setup notice naming `GEMINI_API_KEY`; input disabled |
 | Connecting / consent | — | Browser is at Google; app shows nothing |
 | Connect failed | Dashboard | Alert with the reason from the callback |
 | Connected, no files | Price Updates | Empty state, Scan Gmail offered |
@@ -345,8 +363,6 @@ Regenerate the baseline with `bun run mock:generate --force`; check it with `--c
 ## 9. Still open
 
 - One draft for all dealers, or one per group who bought the same models (the design shows one).
-- Whether the LLM writes the copilot's final sentence or a template does. Either way it may only restate
-  computed numbers.
 - Where the change history lives, and what the "View change history" link opens.
 - The 90-day window covers the whole sales file, so the filter cannot currently exclude anyone. Extending the
   sales history back to ~May would make it testable.

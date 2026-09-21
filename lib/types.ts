@@ -107,6 +107,7 @@ export interface ApiError {
     | "conflict"
     | "unusable_file"
     | "invalid_llm_output"
+    | "llm_unavailable"
     | "internal";
   message: string;
 }

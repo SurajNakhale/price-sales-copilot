@@ -16,7 +16,7 @@ import { toGeminiSchema } from "./schemas";
 
 let client: GoogleGenAI | null = null;
 
-function getClient(): GoogleGenAI {
+export function getClient(): GoogleGenAI {
   const apiKey = process.env.GEMINI_API_KEY;
   if (!apiKey) {
     throw new MissingConfigError(
@@ -27,8 +27,21 @@ function getClient(): GoogleGenAI {
   return client;
 }
 
-export function llmModel(): string {
-  return process.env.LLM_MODEL || DEFAULT_LLM_MODEL;
+export type LlmFeature = "analyse" | "copilot";
+
+const FEATURE_MODEL_ENV: Record<LlmFeature, string> = {
+  analyse: "ANALYSE_MODEL",
+  copilot: "COPILOT_MODEL",
+};
+
+/**
+ * The model for a feature: its own variable (ANALYSE_MODEL, COPILOT_MODEL), then
+ * LLM_MODEL, then the default. Free-tier limits are per model, so giving the two
+ * features different models stops them sharing one daily allowance.
+ */
+export function llmModel(feature?: LlmFeature): string {
+  const own = feature ? process.env[FEATURE_MODEL_ENV[feature]] : undefined;
+  return own || process.env.LLM_MODEL || DEFAULT_LLM_MODEL;
 }
 
 export interface StructuredRequest<T> {
@@ -59,7 +72,8 @@ export async function generateStructured<T>(request: StructuredRequest<T>): Prom
         : `${request.input}\n\nYour previous answer was rejected: ${problem}\nAnswer again, fixing that.`;
 
     const interaction = await ai.interactions.create({
-      model: llmModel(),
+      // Only Feature 2 uses structured single-turn calls.
+      model: llmModel("analyse"),
       system_instruction: request.instructions,
       input,
       response_format: responseFormat,

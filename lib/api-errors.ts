@@ -6,6 +6,7 @@ import {
   BadRequestError,
   ConflictError,
   InvalidLlmOutputError,
+  LlmUnavailableError,
   MissingConfigError,
   NotConnectedError,
   NotFoundError,
@@ -62,6 +63,13 @@ export function errorResponse(error: unknown): NextResponse<ApiError> {
     return NextResponse.json(
       { error: "invalid_llm_output", message: error.message },
       { status: 502 },
+    );
+  }
+
+  if (error instanceof LlmUnavailableError) {
+    return NextResponse.json(
+      { error: "llm_unavailable", message: error.message },
+      { status: 503 },
     );
   }
 

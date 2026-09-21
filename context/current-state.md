@@ -14,14 +14,14 @@ first thing to read when picking the work back up.
 | 1 — Gmail price-list ingestion | **Implemented.** Scan, pick, download, dedup, manifest. Has scanned a real mailbox (nothing found) but not yet downloaded a real attachment |
 | Feature 1 test kit | **Implemented.** Six sample files to email to the connected account, and a byte-level check of what the app saved. Not yet run against real Gmail |
 | App shell and dashboard | **Implemented.** Sidebar, eight routes, KPIs, two charts, data views |
-| 2 — Normalise, compare, approve | **Implemented** (2026-09-21). Analyse, review, approve, end to end through the real routes and pages. The Gemini calls are unit-tested with a scripted SDK but **have never run against the live API**: no key is configured |
+| 2 — Normalise, compare, approve | **Implemented** (2026-09-21). Analyse, review, approve, end to end through the real routes and pages. The Gemini calls are unit-tested with a scripted SDK but **have never run against the live API** (a key was added later, during Feature 4) |
 | 3 — Draft dealer emails | **Not started.** Not planned yet either |
-| 4 — Sales Copilot | **Not started.** Not planned yet either |
+| 4 — Sales Copilot | **Implemented** (2026-09-21). Gemini chooses among three read-only tools; code computes every number and checks the model's sentence. **16 of 16 live eval questions pass** on `gemini-3.5-flash-lite`; the default `gemini-3.8-flash` ran one question end to end before its free-tier daily quota ran out |
 
 The specs are settled and live in this folder: `project-overview.md` (what the app is for),
 `architecture.md` (how it is put together), `mock-data.md` (what the data is and how to regenerate it),
-`ui-design.md` (every screen), `features/feature-1-gmail-price-list-ingestion.md` and
-`features/feature-2-normalise-compare-approve.md`.
+`ui-design.md` (every screen), `features/feature-1-gmail-price-list-ingestion.md`,
+`features/feature-2-normalise-compare-approve.md` and `features/feature-4-sales-copilot.md`.
 
 ---
 
@@ -30,16 +30,17 @@ The specs are settled and live in this folder: `project-overview.md` (what the a
 | Command | What it reports |
 |---|---|
 | `bun run dev` | The app on http://localhost:3000 |
-| `bun run test` | 112 passing tests, 0 failing (Feature 1, Feature 2, analytics, sample files) |
+| `bun run test` | 171 passing tests, 0 failing (Feature 1, Feature 2, Feature 4, analytics, sample files) |
 | `bun run lint` | Clean, no errors or warnings |
 | `bun run build` | Succeeds, no Turbopack warnings |
 | `bunx tsc --noEmit` | Clean |
 | `bun run mock:generate --check` | `OK: 30 products, 20 dealers, 200 sales lines in 66 invoices` |
 | `bun run mock:supplier-files` | Writes six sample files to `mock-data/sample-supplier-files/` and prints the email checklist. Refuses to overwrite without `--force` |
 | `bun run mock:supplier-files --check-downloads` | Compares what the app saved in `mock-data/new-price-lists/` with those samples, by checksum. Before any download: `0 of 4 expected files downloaded`, `No problems found` |
+| `bun run copilot:eval` | Asks Gemini 16 real questions and checks the figures the chosen tools returned against values computed from the files. Needs `GEMINI_API_KEY`; 2–3 Gemini calls a question. Last run: 16 of 16 on `gemini-3.5-flash-lite` |
 
-Nothing works against Gmail until `.env.local` has a Google OAuth client, and Analyse needs
-`GEMINI_API_KEY` — see `README.md`.
+Nothing works against Gmail until `.env.local` has a Google OAuth client, and Analyse and the Sales Copilot
+need `GEMINI_API_KEY` — see `README.md`. The copilot does not need Gmail.
 
 ---
 
@@ -61,7 +62,10 @@ Nothing works against Gmail until `.env.local` has a Google OAuth client, and An
 | Dashboard | `app/page.tsx`, `KpiCards.tsx`, `SalesCharts.tsx`, `PriceListsCard.tsx` | Real figures, no placeholders |
 | Feature 1 UI | `app/_components/ScanDialog.tsx`, `GmailSettings.tsx` | Scan is a dialog off the header; connection lives in Settings |
 | Data views | `app/products`, `app/dealers`, `app/sales` | Read-only tables. Sales paginates 50 a page |
-| Placeholders | `app/copilot` | Says which feature it belongs to rather than showing fake data. Steps 4–5 of the workflow are shown locked, marked Feature 3 |
+| Feature 4 core | `lib/copilot/period.ts`, `filters.ts`, `sales.ts`, `products.ts`, `tools.ts`, `guard.ts`, `export.ts` | Pure. The three tools (`query_sales`, `compare_periods`, `lookup_products`), date and name resolution, the readable steps and template sentences, and the number check |
+| Feature 4 service | `lib/copilot/ask.ts`, `lib/llm/chat.ts`, `lib/llm/prompts/copilot.ts`, `app/api/copilot/ask/route.ts` | The tool-calling loop (4 rounds, 6 calls). `chat.ts` replays the model's steps verbatim, as the live API requires. Rate limits and a spent daily quota become a 503 with a readable message |
+| Feature 4 UI | `app/copilot/page.tsx`, `CopilotChat.tsx`, `CopilotAnswer.tsx` | Steps, table, checked sentence, Copy table and Download CSV. Nothing is stored; reloading starts a new thread |
+| Locked steps | `WorkflowStepper.tsx` | Steps 4–5 of the workflow are shown locked, marked Feature 3 |
 | Sample supplier files | `scripts/generate-supplier-files.ts`, `test/sample-files.test.ts` | Six files (`.csv`, `.xlsx`, one to ignore, one unrelated, one same-name-different-content). Each supplier file is the current list with 3 changes, 1 new, 1 left out, and one changed model spelled the supplier's way (two resolved by the LLM, one by the matching key). `write-excel-file` is a dev dependency, writer only |
 
 ### Routes
@@ -84,16 +88,37 @@ Nothing works against Gmail until `.env.local` has a Google OAuth client, and An
     console errors.
   - Everything was then removed, and the price list was restored from git.
 
+### How Feature 4 was verified (2026-09-21)
+
+- **Unit tests** (`test/feature-4.test.ts`, 59 tests, no network): every §5 answer in the spec recomputed by brute force
+  and compared with the tools; periods, filters, the number check, the loop with a scripted model, the Gemini request
+  shape and error mapping. Disabling the number check or the zero-sales lookup fails them.
+- **Live API spike** on `gemini-3.8-flash`: confirmed the response shape and that the model's thought signatures must
+  be replayed unchanged (dropping one gets a 400). Recorded in `architecture.md` §7.
+- **Live eval, 16 of 16** on `gemini-3.5-flash-lite`, then through the real route and page in headless Chrome. The
+  screenshot caught a "not bought" table led by the biggest buyers; fixed. Details in the spec, §9.
+
 ---
 
 ## 4. Known gaps
 
 These are all deliberate, not oversights.
 
-- **The live Gemini call is unverified.** `.env` has the Google OAuth variables only. The call shape follows
-  Google's structured-output docs and the SDK's types, and a mocked SDK tests the wrapper, but the first real
-  Analyse is the first real call. If Gemini rejects the derived schema, `toGeminiSchema` in `lib/llm/schemas.ts`
-  is where to adjust it. Use a paid-tier key before real supplier files (`architecture.md` §12, decision 8).
+- **Feature 2's live Gemini call is unverified.** A key is now in `.env`, and Feature 4's tool calls have run against
+  the live API, but Feature 2's structured-output call has not. The call shape follows Google's structured-output
+  docs and the SDK's types, and a mocked SDK tests the wrapper. If Gemini rejects the derived schema, `toGeminiSchema`
+  in `lib/llm/schemas.ts` is where to adjust it. Use a paid-tier key before real supplier files (`architecture.md`
+  §12, decision 8).
+- **The free-tier key allows `gemini-3.8-flash` 20 requests a day.** A copilot question uses 2–3, so about 7–10 a
+  day, shared with Analyse. It ran out on 2026-09-21. `LLM_MODEL=gemini-3.5-flash-lite` has its own quota and passed
+  the whole eval; a paid-tier key removes the limit. The default model is unchanged. To stretch the free tier:
+  `ANALYSE_MODEL` / `COPILOT_MODEL` give each feature its own model and allowance; repeated copilot questions are
+  cached in memory (free until restart); `COPILOT_SENTENCE=template` halves the copilot's requests. README, "Using
+  the Gemini free tier", is the guide.
+- **The copilot's full eval has not run on the default model.** Only one question has, in the spike. Rerun
+  `bun run copilot:eval` once the quota resets.
+- **The copilot cannot answer price-history questions** ("which products had a price increase?"). There is no change
+  history yet (decision 6); it says so instead of guessing.
 - **The sample files on disk predate the renamed rows.** `mock-data/sample-supplier-files/` was generated before
   Feature 2. Run `bun run mock:supplier-files --force` before emailing them, or the matching fallback is never
   exercised. The old files still analyse correctly.
@@ -126,7 +151,7 @@ These are all deliberate, not oversights.
 
 ## 5. Next steps
 
-Features 1 and 2 are built. When work resumes, the order that costs least rework:
+Features 1, 2 and 4 are built. When work resumes, the order that costs least rework:
 
 1. **Run the Feature 1 email test with the new samples.** `bun run mock:supplier-files --force` (the files
    on disk predate the renamed rows), send the six emails as the checklist says
@@ -141,7 +166,8 @@ Features 1 and 2 are built. When work resumes, the order that costs least rework
    It reads the approved review's `applied` items. Decide open decisions 4 and 7 (one draft or several;
    extending the sales history so the 90-day filter can exclude anyone). Needs a Gmail compose scope,
    so the OAuth consent has to be re-granted.
-4. **Feature 4** on `/copilot`. Reuse `lib/analytics.ts`; the LLM plans the steps, the app runs them.
+4. **Rerun the copilot eval on the default model** (`bun run copilot:eval`) once the daily quota resets, or with a
+   paid key, and decide whether the default should stay `gemini-3.8-flash` or move to `gemini-3.5-flash-lite`.
 
 ---
 
@@ -152,14 +178,13 @@ Each of these gets its own plan and its own file in `context/features/` before a
 - **Feature 3 — draft dealer emails.** Find dealers who bought the changed models in the last 90 days,
   LLM writes a short update, saved as a Gmail draft with dealers in BCC. Never sent by the app.
   *Not planned yet.*
-- **Feature 4 — Sales Copilot.** Plain-English questions, answered with the steps shown. *Not planned yet.*
 
 ---
 
 ## 7. Open decisions
 
-Five remain (4–8), listed in `architecture.md` §12 with where each one should be decided. They are not
-duplicated here so there is only one list to keep current.
+Four remain (4, 6, 7 and 8), listed in `architecture.md` §12 with where each one should be decided. They are
+not duplicated here so there is only one list to keep current.
 
 Settled recently:
 
@@ -169,3 +194,5 @@ Settled recently:
   - Matching: code first by matching key, then an LLM fallback that code validates.
   - Where files live: `.data/normalized/` and `.data/reviews/`.
   - The `.xlsx` parser: `read-excel-file`.
+- Decision 5 was settled with Feature 4 (2026-09-21): the LLM writes the copilot's sentence, and code checks every
+  number in it against the tool results.

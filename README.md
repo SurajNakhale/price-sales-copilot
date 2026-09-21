@@ -4,8 +4,8 @@ Reads brand price lists from Gmail, shows what changed, drafts an email to affec
 answers sales questions. Built feature by feature — see [`context/`](context/) for the project
 overview, architecture, mock data and per-feature specs.
 
-**Features 1 (Gmail price list ingestion) and 2 (normalise, compare, approve) are implemented.**
-Features 3 and 4 are specified but not built.
+**Features 1 (Gmail price list ingestion), 2 (normalise, compare, approve) and 4 (Sales Copilot) are
+implemented.** Feature 3 (dealer email drafts) is specified but not built.
 
 ---
 
@@ -18,7 +18,8 @@ bun dev                        # http://localhost:3000
 ```
 
 Without Google credentials the app still runs; Connect Gmail will report the missing variable.
-Without `GEMINI_API_KEY`, Analyse reports the missing variable and nothing else is affected.
+Without `GEMINI_API_KEY`, Analyse reports the missing variable and the Sales Copilot shows a setup
+notice; nothing else is affected.
 
 | Command | What it does |
 |---|---|
@@ -179,6 +180,74 @@ The mock sample files are fine on the free tier.
 `bun run mock:generate --force` resets the current price list after trying approvals. The full spec is in
 [`context/features/feature-2-normalise-compare-approve.md`](context/features/feature-2-normalise-compare-approve.md).
 
+## What Feature 4 does
+
+Open **Sales Copilot** and ask in plain English: "Which dealer bought the most Samsung products?", "Compare August
+with July", "Which dealers have not bought Samsung?".
+
+```text
+your question
+   ▼
+Gemini chooses a tool     query_sales, compare_periods or lookup_products, and their filters, period and grouping
+   ▼
+the app runs it           filters, adds up and compares the mock data; every number comes from here
+   ▼
+Gemini words the answer   one sentence from the results, or another query first (at most 4 rounds)
+   ▼
+the app checks it         every number in the sentence must be in the results, or a plain sentence replaces it
+   ▼
+you see                   the steps used, the result table, the sentence, and Copy / Download CSV
+```
+
+It uses the same `GEMINI_API_KEY` and needs no Gmail connection. Gemini sees your question and the query results,
+never the raw files or any dealer email address. "Today" is the last invoice date in the data (18 Sep 2026), so
+"last month" means August 2026. It cannot answer price-history questions yet: no change history is recorded.
+
+`bun run copilot:eval` asks Gemini about 16 real questions and checks the figures the chosen tools returned against
+values computed independently from the files. It needs the key and makes two or three Gemini calls per question. The
+full spec is in [`context/features/feature-4-sales-copilot.md`](context/features/feature-4-sales-copilot.md).
+
+## Using the Gemini free tier
+
+The free tier is enough for this app if you spend requests deliberately.
+
+**How the limits work.** Each model has its own daily allowance, counted **per Google Cloud project** (every key in a
+project shares it). It resets at **midnight Pacific time: 12:30 pm IST** (1:30 pm IST from November). Google no longer
+publishes the numbers; see yours at <https://aistudio.google.com/rate-limit>. On 2026-09-21 this project's key allowed
+`gemini-3.8-flash` **20 requests a day**; `gemini-3.5-flash-lite` has a separate allowance.
+
+**What things cost.**
+
+| Action | Gemini requests |
+|---|---|
+| One copilot question | usually 2 (choose the query, write the sentence); 1 in economy mode; 0 if asked before |
+| Analyse one price list | 1–3 (column mapping, a retry if rejected, matching renamed rows) |
+| `bun run copilot:eval`, all 16 questions | about 30 |
+| `bun run test` | 0: every test uses a fake model |
+
+**How to make it last.**
+
+1. **Use Flash-Lite for everyday work.** It passed all 16 copilot eval questions. Keep Flash for Analyse on messy
+   files, and give each feature its own model so they don't share one allowance:
+   ```bash
+   ANALYSE_MODEL=gemini-3.8-flash
+   COPILOT_MODEL=gemini-3.5-flash-lite
+   ```
+2. **Repeat questions are free.** The copilot remembers answers until the server restarts, so a repeated question or
+   suggestion costs nothing ("cached, no Gemini request" under the answer). Changing the data files starts afresh.
+3. **Economy mode** halves the copilot's cost: `COPILOT_SENTENCE=template` has the app write the sentence from the
+   results instead of asking Gemini a second time. The wording is plainer, and a question that needs two chained
+   queries gets only the first.
+4. **Test without the API.** `bun run test` covers the logic for free. Go live only to check the model itself, and run
+   eval subsets: `bun run copilot:eval 3 9` costs about 4 requests.
+5. **Plan live sessions for after 12:30 pm IST**, and check the AI Studio page before a demo.
+6. **A 503 "used up its daily request limit" will not clear by retrying.** Switch model, or wait for the reset.
+7. **Don't create extra projects to multiply the quota**: that breaks Google's terms and risks the key. If you need
+   more, enable billing on the project for a paid key, which also stops Google using your prompts.
+
+The free tier lets Google use prompts to improve its products, which is fine for the mock data. Use a paid key before
+analysing real supplier price lists.
+
 ## Troubleshooting
 
 | What you see | Cause and fix |
@@ -190,6 +259,8 @@ The mock sample files are fine on the free tier.
 | Scan finds nothing | The query needs an `.xlsx`/`.csv` attachment, "price" in the subject or filename, and an email newer than 90 days. |
 | "Missing environment variable GEMINI_API_KEY" | Add the key to `.env.local` and restart `bun dev`, then press Retry. |
 | "The current price list changed after this file was analysed" | Another file's approval changed the same products first. Press Re-analyse, then approve. |
+| Copilot: "Gemini is rate-limiting requests right now" | A short-term limit. Wait a minute and ask again. |
+| "The Gemini key has used up its daily request limit" | The free tier's daily allowance for that model is spent. Set another model (`COPILOT_MODEL`, `ANALYSE_MODEL` or `LLM_MODEL`) or wait until 12:30 pm IST. See "Using the Gemini free tier". |
 
 ## Security notes
 

@@ -1,8 +1,7 @@
 # Architecture
 
-**Status:** Features 1 and 2 built (2026-09-21), each specified in detail in `features/`. Features 3 and 4 are
-designed here at module level and get their own specs when they are built. Items marked "proposed" are not settled yet
-(see section 12).
+**Status:** Features 1, 2 and 4 built (2026-09-21), each specified in detail in `features/`. Feature 3 is designed here
+at module level and gets its own spec when it is built. Items marked "proposed" are not settled yet (see section 12).
 
 ## 1. Overview
 
@@ -42,7 +41,7 @@ Deterministic core      lib/llm          lib/google +        lib/storage
 
 1. **One app.** Next.js + TypeScript. No separate backend service, no database, no custom application login (Google OAuth
    only connects Gmail).
-2. **The LLM proposes, code decides, the human approves.** The LLM produces column mappings, query plans and message text.
+2. **The LLM proposes, code decides, the human approves.** The LLM produces column mappings, tool calls and message text.
    Application code does every comparison, filter, aggregation and write. The user approves every business change.
 3. **Send the LLM as little as possible.** Headers and a few sample rows, field names, changed products. Never dealer
    email addresses, never whole datasets.
@@ -63,13 +62,13 @@ Deterministic core      lib/llm          lib/google +        lib/storage
 
 ## 4. Layers and code layout
 
-Features 1 and 2 are laid out as built; the rest is proposed. File names are exactly those of the feature specs.
+Features 1, 2 and 4 are laid out as built; Feature 3 is proposed. File names are exactly those of the feature specs.
 
 ```text
 app/
   layout.tsx, page.tsx              shell and dashboard
   price-updates/, price-updates/[id]/  the list, and the 5-step workflow for one file (Features 1 → 2 → 3)
-  copilot/                          Feature 4 (added when built)
+  copilot/                          the Sales Copilot page (Feature 4)
   _components/                      feature UI components
   api/
     auth/google/                    connect, callback, disconnect            (Feature 1)
@@ -86,10 +85,12 @@ lib/
   parse/                            csv and xlsx to rows of cells (Feature 2)
   google/oauth.ts                   OAuth client and token file
   gmail/                            search and attachments (Feature 1), drafts (Feature 3)
-  llm/                              Gemini client, prompts, Zod output schemas, the LlmPort interface
+  llm/                              Gemini client, prompts, Zod output schemas, the LlmPort and ChatPort interfaces
+  copilot/                          Feature 4: the three read-only tools, periods and filters (pure), the number check,
+                                    and the tool-calling loop (ask.ts)
   storage/                          the ONLY code that reads or writes data files
   normalize.ts  match.ts  compare.ts   Feature 2's deterministic core (pure; match.ts calls the LLM through a port)
-  ingest.ts  analyse.ts  approve.ts  drafts.ts  copilot/     feature services
+  ingest.ts  analyse.ts  approve.ts  drafts.ts  copilot/ask.ts     feature services
 scripts/generate-mock-data.ts       mock data generator and reset
 scripts/generate-supplier-files.ts  sample supplier files to email to yourself
 mock-data/                          inputs and source-of-truth data files
@@ -102,7 +103,7 @@ context/                            project documentation
 | Pages and components | Render, collect input, call the API | Route handlers via `fetch` | Touch files, Gmail or the LLM |
 | Route handlers | Validate input, call one service, map errors to HTTP | Feature services | Contain business logic |
 | Feature services | Orchestrate one feature | Core, integrations, storage | Be imported by other features' services |
-| Deterministic core | Compare prices, find affected dealers, aggregate, run query plans, sanitize filenames | Nothing external (pure functions) | Do I/O |
+| Deterministic core | Compare prices, find affected dealers, aggregate, run the copilot's tools, sanitize filenames | Nothing external (pure functions) | Do I/O |
 | Integrations (`google`, `gmail`, `llm`) | The only code that talks to external services | Their own SDKs | Know about pages or routes |
 | Storage | The only code that reads and writes data files | The filesystem | Contain business rules |
 
@@ -234,37 +235,49 @@ file is refreshed. Open: one draft for all dealers, or one draft per group of de
 
 ### 6.4 Feature 4: answer sales questions
 
+Built as a tool-calling loop (2026-09-21); the full spec is `features/feature-4-sales-copilot.md`.
+
 ```text
-question (text)
+question (+ the last 3 question/answer pairs, for follow-ups)
    ▼
-LLM: turn the question into a query plan      input: the question and the field names of each dataset, NOT the data
-   │ output: JSON steps from a fixed vocabulary: filter, join, group, aggregate, sort, limit, date range
+LLM: choose a tool and its arguments       input: the question, today's date, the names in the data, 3 tool declarations
+   │ tools: query_sales, compare_periods, lookup_products — read-only, from a fixed vocabulary:
+   │ filter, group, sort, limit, period (all, last_month, this_month, last_days, month, between)
    ▼
-code: validate the plan                       only known datasets, fields and operations; anything else is rejected
+code: validate the arguments (Zod)         an invalid call goes back to the model as an error it can correct
    ▼
-code: run the plan on sales, products, dealers (and change history)
-   │ relative dates ("last month", "last 90 days") are resolved by code against today = latest invoice date
+code: run the tool on sales, products, dealers
+   │ relative dates are resolved by code against today = latest invoice date; every total, share, average and change is
+   │ computed here
    ▼
-result table + the plan rendered as readable steps
+LLM: sees the results → another tool call, or one sentence (at most 4 rounds, 6 tool calls)
    ▼
-answer sentence                               open: the LLM restates the computed numbers, or a template does
+code: every number in the sentence must occur in a result, else a template sentence replaces it
    ▼
-UI shows: question, steps, data, answer
+UI shows: question, steps (written by code from the arguments), result tables, the sentence and where it came from
 ```
 
-The plan is data, not code. Nothing the LLM writes is executed as code or SQL, so the steps can be shown to the user as they
-are and the LLM cannot be talked into arbitrary actions. Whole datasets never go to the LLM.
+This replaces the single-turn "query plan" first proposed here: the vocabulary is the same, delivered as function calls,
+which lets the model chain a second query off the first and write the sentence from real results. The properties hold:
+nothing the LLM writes is executed as code or SQL, every tool is read-only, the arguments are validated, and the steps are
+shown so the result can be checked. The LLM now sees tool results (aggregates and names, capped at 50 rows) but never a
+whole dataset, and never a dealer email address, which no tool returns.
 
 ## 7. LLM integration (Google Gemini)
 
 - **One wrapper.** Only `lib/llm/` imports the Gemini SDK. Features call typed functions such as `proposeColumnMapping`,
-  `proposeProductMatches`, `draftDealerMessage`, `planQuery` (and possibly `phraseAnswer`). Changing provider means changing
-  that folder only.
+  `proposeProductMatches`, `draftDealerMessage`, and Feature 4's `ChatPort.turn` for tool calling. Changing provider means
+  changing that folder only.
 - **SDK and model.** Official `@google/genai`; key in `GEMINI_API_KEY`; model name in `LLM_MODEL`, default `gemini-3.8-flash`
   (the stable Flash model Google's docs recommend for structured tasks). `gemini-3.5-flash-lite` is the cheaper alternative.
-- **API.** Google recommends the Interactions API for new projects; `generateContent` is legacy but still supported. Our
-  calls are stateless single-turn requests, so use `store=false`. By default interactions are stored (1 day on the free tier,
-  55 days on paid).
+  `ANALYSE_MODEL` and `COPILOT_MODEL` override it per feature (`llmModel(feature)` in `lib/llm/client.ts`).
+- **Free-tier limits** are per Google Cloud project and per model, and reset at midnight Pacific time. Google no longer
+  publishes the numbers; on 2026-09-21 this project's key allowed `gemini-3.8-flash` 20 requests a day. A copilot
+  question costs 2 requests (1 in economy mode, 0 when cached), an Analyse 1–3. See README, "Using the Gemini free tier".
+- **API.** Google recommends the Interactions API for new projects; `generateContent` is legacy but still supported. Every
+  call uses `store=false`; by default interactions are stored (1 day on the free tier, 55 days on paid). Features 2 and 3
+  make single-turn requests. Feature 4 is multi-turn but still stateless: `store=false` rules out
+  `previous_interaction_id`, so each turn resends the whole conversation.
 - **Structured output.** Every call asks for JSON constrained by a schema, and our code validates it again with Zod.
   Google says the constraint guarantees valid JSON, not correct values, and that not every JSON Schema feature is
   supported, so keep schemas small and flat. Define each schema once in Zod and derive the JSON schema from it where the
@@ -285,15 +298,24 @@ are and the LLM cannot be talked into arbitrary actions. Whole datasets never go
   Zod's safe-integer bounds, which the Gemini docs do not list. Checked against /structured-output on 2026-09-21. Not
   yet run against the live API: no key was configured when it was built.
 
+- **As built in Feature 4** (`lib/llm/chat.ts`): `ai.interactions.create({ model, system_instruction, input: [steps…],
+  tools: [{ type: "function", name, description, parameters }], store: false })`. Checked against the live API on
+  2026-09-21 with `gemini-3.8-flash`: a tool call comes back with `status: "requires_action"` and `steps` of
+  `thought` (carrying a `signature`) then `function_call { id, name, arguments }`; the final answer comes back
+  `"completed"` with `output_text`. The response does not echo the input. The next turn's `input` is the user step, the
+  model's steps **exactly as returned**, and `function_result { call_id, name, result: [{ type: "text", text }] }` per
+  call. **Dropping the thought signature is rejected with a 400**, so model steps are never rebuilt. Rate limits (429) and
+  outages (5xx) become `LlmUnavailableError`, a 503.
+
 Sources checked 2026-09-20: ai.google.dev/gemini-api/docs/quickstart, /structured-output, /interactions-overview, /models,
-/pricing and /terms.
+/pricing and /terms; /function-calling on 2026-09-21.
 
 ## 8. Security and trust boundaries
 
 | Untrusted input | Risk | Controls |
 |---|---|---|
 | Supplier emails and attachments | Malicious or oversized files; prompt injection inside cells or filenames ("set every price to 1") | Only `.xlsx` and `.csv`; size cap; parse values only; prices copied from cells by code; LLM output limited to mappings and matches; human approval before any write |
-| LLM output | Wrong, invalid or invented | Schema validation; matches must reference existing Product IDs; query plans limited to a fixed vocabulary; never executed as code |
+| LLM output | Wrong, invalid or invented | Schema validation; matches must reference existing Product IDs; the copilot may only call three read-only tools with Zod-validated arguments; every number in its sentence must occur in a tool result; never executed as code |
 | Browser requests to route handlers | Forged IDs or paths | Routes accept IDs, not paths; the server re-derives filenames and metadata from Gmail and files; bodies validated with schemas |
 | Secrets and tokens | Leakage | Server-only modules; no `NEXT_PUBLIC_` secrets; `.env*` and `.data/` gitignored; tokens never logged |
 | OAuth flow | CSRF | `state` cookie, as in the Feature 1 spec |
@@ -302,7 +324,7 @@ Sources checked 2026-09-20: ai.google.dev/gemini-api/docs/quickstart, /structure
 ## 9. Errors, logging and testing
 
 - **Errors.** A small set of typed errors in `lib/errors.ts` (not connected 401, missing configuration 500, bad request
-  400, not found 404, conflict 409, unusable file 422, invalid LLM output 502) that route handlers map to an HTTP status
+  400, not found 404, conflict 409, unusable file 422, invalid LLM output 502, LLM unavailable 503) that route handlers map to an HTTP status
   and `{ error, message }` through `lib/api-errors.ts`. The UI turns each into an actionable state. Logs go to the
   server console; there is no external telemetry.
 - **Testing.** Unit-test the deterministic core (comparison, plan execution, date resolution, filename sanitizing, dedup)
@@ -321,7 +343,7 @@ Sources checked 2026-09-20: ai.google.dev/gemini-api/docs/quickstart, /structure
 | 1 Read Gmail | `/`, `/price-updates` | `auth/google/*`, `ingest/scan`, `ingest/download` | ingest, gmail, google, storage | new-price-lists, manifest | Gmail (read) |
 | 2 Clean, compare, approve | `/price-updates/[id]` (steps 2–3) | `prices/[id]/analyse`, `prices/[id]/approve` | analyse, approve, normalize, match, compare, llm, storage | current price list, normalized files, reviews | Gemini |
 | 3 Dealer drafts | `/price-updates/[id]` (steps 4–5) | `drafts/*` | drafts, gmail (compose), llm | reviews (applied items), sales, dealers | Gemini, Gmail (compose) |
-| 4 Sales Q&A | `/ask` | `copilot/ask` | copilot (planner and executor), llm | sales, dealers, current price list, change history | Gemini |
+| 4 Sales Q&A | `/copilot` | `copilot/ask` | copilot (tools, number check, loop), llm (chat) | sales, dealers, current price list | Gemini |
 
 ## 11. Key decisions
 
@@ -330,7 +352,8 @@ Sources checked 2026-09-20: ai.google.dev/gemini-api/docs/quickstart, /structure
 | One Next.js app with route handlers | Simplest thing that works: UI and server in one project, no backend service | Local files make it unsuitable for serverless hosting |
 | JSON files instead of a database | Small data, easy to inspect and reset | No concurrency control or query engine; fine for one user |
 | LLM output is a proposal (mapping, plan, text) | Keeps prices and numbers deterministic and matches "the LLM is not the source of truth" | Extra validation code |
-| Constrained query plans instead of LLM-written code or SQL | Safe, explainable, and the steps can be shown to the user | New kinds of questions may need new operations |
+| Three general read-only tools the LLM calls, instead of LLM-written code, SQL or one tool per question | Safe, explainable, and the steps can be shown; new question types need no new code | A question outside the tools' vocabulary cannot be answered, and the model must pick arguments well |
+| The LLM writes the copilot's sentence; code checks its numbers | Reads naturally and can use the results of a chained query; an invented number is caught and replaced by a template | Results go to Gemini (aggregates and names, never emails); a correct but rounded number also triggers the template |
 | OAuth tokens in a local gitignored file | No database or login needed; survives restarts | Local single-user only |
 | Atomic JSON writes | Protects the price list from partial writes | A small helper to maintain |
 | Missing products are deactivated with an optional `status` field, never deleted | Sales history keeps resolving, and the reviewer's decision sticks instead of the same row returning on every analysis | One more state for every "current catalogue" read to filter out |
@@ -342,7 +365,6 @@ Sources checked 2026-09-20: ai.google.dev/gemini-api/docs/quickstart, /structure
 | # | Question | Decide in |
 |---|---|---|
 | 4 | One dealer email draft, or one per group of dealers who bought the same affected models | Feature 3 |
-| 5 | Who writes the final answer sentence in Feature 4 | Feature 4 |
 | 6 | Where the audit log lives and its format | After the core workflow |
 | 7 | The 90-day window covers all generated sales, so the filter cannot exclude anyone. Extend the sales history to test it | Before Feature 3 |
 | 8 | Move to a paid Gemini key before using real supplier files | Before Feature 2 on real data |
@@ -350,6 +372,8 @@ Sources checked 2026-09-20: ai.google.dev/gemini-api/docs/quickstart, /structure
 Closed:
 
 - What "remove a missing product" means is decided in 6.2: deactivate with an optional `status` field, never delete.
+- Decision 5 was settled with Feature 4 on 2026-09-21: the LLM writes the answer sentence from the tool results, and code
+  checks that every number in it occurs in a result, showing a template sentence when one does not (section 6.4).
 - Decisions 1–3 were settled with Feature 2 on 2026-09-21 (details in its spec, §2):
   - **Matching:** code first by matching key, then an LLM fallback whose answers code validates.
   - **Where files live:** normalised files and reviews go in `.data/normalized/` and `.data/reviews/`.

@@ -118,8 +118,11 @@ Example questions:
 - "Which products had a price increase?" (depends on approved changes from Feature 2 being recorded)
 - "What is the total sales value for routers?"
 
-The system converts the user's question into a series of data retrieval and calculation steps using an LLM. The LLM
-plans the steps; application code runs them against the data, so every number comes from the data and not from the model.
+The LLM reads the question and decides which data tool to call and with what filters, period and grouping. The tools
+are application code: they filter, add up and compare the data, so every number comes from the data and not from the
+model. The LLM then words a one-sentence answer from the results, and the app checks every number in it. "Which products
+had a price increase?" cannot be answered yet, because no change history is recorded; the copilot says so rather than
+guessing. Details: `features/feature-4-sales-copilot.md`.
 
 Each answer should show:
 
@@ -228,7 +231,7 @@ In practice:
 |---|---|---|---|
 | 2: Clean price lists | Maps each supplier's format into the standard schema | Compares prices and classifies the changes; updates product data only after approval | Reviews and approves the changes |
 | 3: Dealer emails | Writes the short price-update message | Finds the affected models and dealers; creates the Gmail draft | Reviews and sends the draft from Gmail |
-| 4: Sales questions | Understands the question and proposes the retrieval and calculation steps | Runs the steps against the data; every number comes from the data | Checks the shown steps and result |
+| 4: Sales questions | Understands the question, chooses which data tools to call and with what arguments, and words the answer | Runs the tools against the data (every number comes from the data) and checks the numbers in the answer | Checks the shown steps and result |
 
 ## Human-in-the-Loop
 

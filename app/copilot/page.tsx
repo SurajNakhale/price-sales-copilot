@@ -1,33 +1,35 @@
-import { NotBuiltYet } from "@/app/_components/NotBuiltYet";
+import { CopilotChat } from "@/app/_components/CopilotChat";
 import { PageHeader } from "@/app/_components/PageHeader";
+import { latestInvoiceDate } from "@/lib/analytics";
+import { readSales } from "@/lib/data/mock-data";
+import { formatDate } from "@/lib/format";
 
 export const dynamic = "force-dynamic";
 
-export default function Copilot() {
+/** Questions the three tools answer, one of each kind (context/features/feature-4-sales-copilot.md §5). */
+const SUGGESTIONS = [
+  "Which models sold the most last month?",
+  "How much did we sell to ABC Computers in the last 90 days?",
+  "Which dealer bought the most Samsung products?",
+  "Which dealers have not bought Samsung?",
+  "Compare August with July by brand",
+  "What is the dealer price of T7 1TB?",
+];
+
+export default async function Copilot() {
+  const today = latestInvoiceDate(await readSales());
+
   return (
     <>
       <PageHeader
         title="Sales Copilot"
-        description="Plain-English questions about sales, products and dealers"
+        description={
+          today
+            ? `Plain-English questions about sales, products and dealers · data to ${formatDate(today)}`
+            : "Plain-English questions about sales, products and dealers"
+        }
       />
-
-      <div className="flex flex-col gap-3.5 p-7">
-        <NotBuiltYet
-          feature="Feature 4"
-          title="Ask a question about the sales data"
-          steps={[
-            "You type a question in plain English.",
-            "The LLM turns it into a short plan of steps over the mock data — it never writes the answer's numbers.",
-            "The app runs those steps and shows them, so every figure can be checked.",
-            "The result table comes first, then a one-line answer.",
-          ]}
-        >
-          <p>
-            The data it will answer from is already here and browsable under
-            Products, Dealers and Sales in the sidebar.
-          </p>
-        </NotBuiltYet>
-      </div>
+      <CopilotChat suggestions={SUGGESTIONS} configured={Boolean(process.env.GEMINI_API_KEY)} />
     </>
   );
 }

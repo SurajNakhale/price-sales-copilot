@@ -73,6 +73,16 @@ export class InvalidLlmOutputError extends Error {
   }
 }
 
+/** Gemini is rate-limiting or down. Worth retrying later; nothing is wrong with the request. */
+export class LlmUnavailableError extends Error {
+  readonly code = "llm_unavailable" as const;
+
+  constructor(message: string) {
+    super(message);
+    this.name = "LlmUnavailableError";
+  }
+}
+
 export function errorMessage(error: unknown): string {
   return error instanceof Error ? error.message : String(error);
 }

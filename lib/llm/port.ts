@@ -1,3 +1,5 @@
+import type * as z from "zod";
+
 import type { Brand, Cell, ColumnMapping } from "@/lib/types";
 
 /**
@@ -39,4 +41,62 @@ export interface LlmPort {
   ): Promise<ColumnMapping>;
 
   proposeProductMatches(input: ProductMatchInput): Promise<ProductMatchProposal[]>;
+}
+
+// ------------------------------------------------ tool calling (Feature 4)
+
+/**
+ * One step of a tool-calling conversation. Steps the model produced are kept
+ * exactly as they came back, because they can carry thought signatures that
+ * must be returned unchanged; nothing outside lib/llm looks inside them.
+ */
+export type ChatStep = { type: string } & Record<string, unknown>;
+
+export interface ChatFunctionCall {
+  id: string;
+  name: string;
+  arguments: Record<string, unknown>;
+}
+
+export interface ChatToolDeclaration {
+  name: string;
+  description: string;
+  /** Converted to the provider's schema format inside lib/llm. */
+  parameters: z.ZodType;
+}
+
+export interface ChatTurnRequest {
+  instructions: string;
+  tools: ChatToolDeclaration[];
+  /** The whole conversation so far: calls are stateless, so every turn resends it. */
+  history: ChatStep[];
+}
+
+export interface ChatTurnResult {
+  /** The steps the model produced this turn, verbatim, to append to the history. */
+  steps: ChatStep[];
+  calls: ChatFunctionCall[];
+  /** The model's text, when it answered instead of (or as well as) calling a tool. */
+  text: string;
+  usage: { inputTokens?: number; outputTokens?: number };
+}
+
+export interface ChatPort {
+  readonly model: string;
+  turn(request: ChatTurnRequest): Promise<ChatTurnResult>;
+}
+
+/** The step that carries the user's words. */
+export function userStep(text: string): ChatStep {
+  return { type: "user_input", content: [{ type: "text", text }] };
+}
+
+/** The step that carries a tool's result back to the model. */
+export function functionResultStep(call: ChatFunctionCall, result: unknown): ChatStep {
+  return {
+    type: "function_result",
+    call_id: call.id,
+    name: call.name,
+    result: [{ type: "text", text: JSON.stringify(result) }],
+  };
 }

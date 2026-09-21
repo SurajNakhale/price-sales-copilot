@@ -64,7 +64,7 @@ export function ScanDialog({ connected }: { connected: boolean }) {
 
   if (!connected) {
     return (
-      <a className={buttonVariants({ size: "sm" })} href="/api/auth/google">
+      <a className={buttonVariants({ size: "lg" })} href="/api/auth/google">
         Connect Gmail
       </a>
     );
@@ -159,7 +159,7 @@ export function ScanDialog({ connected }: { connected: boolean }) {
 
   return (
     <Dialog open={open} onOpenChange={openAndScan}>
-      <DialogTrigger render={<Button size="sm" />}>
+      <DialogTrigger render={<Button size="lg" />}>
         <Search />
         Scan Gmail
       </DialogTrigger>

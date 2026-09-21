@@ -37,7 +37,10 @@ export const LLM_SAMPLE_ROWS = 15;
 /** Each cell sent to the LLM is cut to this many characters. */
 export const LLM_MAX_CELL_LENGTH = 80;
 
-/** Overridable with LLM_MODEL. See context/architecture.md section 7. */
+/**
+ * Overridable with LLM_MODEL, and per feature with ANALYSE_MODEL / COPILOT_MODEL.
+ * See context/architecture.md section 7.
+ */
 export const DEFAULT_LLM_MODEL = "gemini-3.8-flash";
 
 /** Only these attachments are ever downloaded. Lowercase, with the dot. */
