@@ -228,7 +228,7 @@ export interface SalesRow {
 export interface QuerySalesResult {
   tool: "query_sales";
   today: string;
-  period: { from: string; to: string; label: string; days: number };
+  period: { from: string; to: string; label: string; reading?: string; days: number };
   filters: string[];
   groupBy: SalesGroupBy;
   sortBy: SortBy;
@@ -300,7 +300,13 @@ export function querySales(data: CopilotData, args: QuerySalesArgs): QuerySalesR
   const result: QuerySalesResult = {
     tool: "query_sales",
     today: ctx.today,
-    period: { from: period.from, to: period.to, label: period.label, days: period.days },
+    period: {
+      from: period.from,
+      to: period.to,
+      label: period.label,
+      ...(period.reading ? { reading: period.reading } : {}),
+      days: period.days,
+    },
     filters: filters.applied,
     groupBy,
     sortBy,
@@ -419,6 +425,7 @@ export interface PeriodSummary {
   from: string;
   to: string;
   label: string;
+  reading?: string;
   days: number;
   revenue: number;
   revenueText: string;
@@ -474,6 +481,7 @@ function summarise(lines: SalesLine[], period: ResolvedPeriod): PeriodSummary {
     from: period.from,
     to: period.to,
     label: period.label,
+    ...(period.reading ? { reading: period.reading } : {}),
     days: period.days,
     revenue,
     revenueText: formatMoney(revenue),

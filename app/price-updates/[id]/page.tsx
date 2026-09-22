@@ -7,6 +7,7 @@ import { AnalyseCard } from "@/app/_components/AnalyseCard";
 import { DraftPanel } from "@/app/_components/DraftPanel";
 import { PageHeader } from "@/app/_components/PageHeader";
 import { PriceListStatus } from "@/app/_components/PriceListStatus";
+import { ReceivedFileCard } from "@/app/_components/ReceivedFileCard";
 import { ReviewPanel } from "@/app/_components/ReviewPanel";
 import { WorkflowStepper } from "@/app/_components/WorkflowStepper";
 import { Button } from "@/components/ui/button";
@@ -16,6 +17,7 @@ import { findOutdatedItems } from "@/lib/compare";
 import { LLM_SAMPLE_ROWS } from "@/lib/config";
 import { readDealers, readProducts, readSales } from "@/lib/data/mock-data";
 import { buildEmail } from "@/lib/drafts/message";
+import { readPriceListPreview } from "@/lib/file-view";
 import { formatDate, senderName } from "@/lib/format";
 import { connectedAddressOrNull, openInGmailUrl } from "@/lib/gmail/drafts";
 import { hasDraftPermission } from "@/lib/google/oauth";
@@ -25,9 +27,10 @@ import { findPriceList, readNormalized, readReview } from "@/lib/storage/price-r
 export const dynamic = "force-dynamic";
 
 /**
- * The workflow for one downloaded price list: step 2 (Analyse) until it has
- * been analysed, then step 3 (Review & approve), and once approved, step 4
- * (Affected dealers) and step 5 (Draft email). Reads storage directly; the
+ * The workflow for one downloaded price list: step 1 (the file as received)
+ * throughout, step 2 (Analyse) until it has been analysed, then step 3
+ * (Review & approve), and once approved, step 4 (Affected dealers) and step 5
+ * (Draft email). Reads storage directly; the
  * actions go through /api/prices/[id]/*.
  */
 export default async function PriceListWorkflow({
@@ -47,6 +50,7 @@ export default async function PriceListWorkflow({
     readDealers(),
   ]);
 
+  const preview = await readPriceListPreview(entry, normalized);
   const analysed = review !== null && review.status !== "failed";
   const approved = review?.status === "approved";
   const outdated =
@@ -92,6 +96,8 @@ export default async function PriceListWorkflow({
         </div>
 
         <WorkflowStepper current={stepperAt} approved={approved} />
+
+        <ReceivedFileCard fileId={id} filename={entry.savedAs} preview={preview} />
 
         {analysed ? (
           <ReviewPanel

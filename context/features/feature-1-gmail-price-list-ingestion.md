@@ -286,6 +286,14 @@ these subjects and what MIME structure real messages arrive in. That is what sen
 - Re-running never creates duplicates and never overwrites a different file.
 - No parsing, LLM call, or price comparison exists anywhere in Feature 1.
 
+### Viewing a downloaded file
+
+Each downloaded file can be viewed on its workflow page, `/price-updates/[id]`, in the step 1 card, "The file as
+received" (`ui-design.md` §2.4a). The card shows the cells exactly as saved, and **Download original**
+(`GET /api/prices/[id]/file`) returns the saved bytes untouched, as an attachment. It is read-only: nothing is
+written, and the file on disk never changes. The viewer reads the file with Feature 2's parser
+(`parseAllSheets`), so the ingestion code itself still parses nothing, as §10 requires.
+
 ## 11. Handoff to Feature 2
 
 Feature 2 can rely on:

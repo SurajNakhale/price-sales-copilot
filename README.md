@@ -149,6 +149,8 @@ mock-data/new-price-lists/    raw files + manifest.json (sender, subject, date, 
 - Files are never modified, never overwritten, and re-running never creates duplicates.
 - No LLM is involved in Feature 1.
 - Downloaded price lists are gitignored — real supplier pricing stays out of the repository.
+- To see a downloaded file, open it from Price Updates: the step 1 card, **The file as received**, shows its cells
+  as saved (every sheet of a workbook), and **Download original** gives you the untouched file.
 
 The Gmail search, the allowed extensions and the message cap live in [`lib/config.ts`](lib/config.ts).
 You can narrow the search to specific senders with `SENDER_ALLOWLIST` in `.env.local`.

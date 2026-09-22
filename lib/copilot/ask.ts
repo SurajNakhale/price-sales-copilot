@@ -6,17 +6,21 @@ import { earliestInvoiceDate, latestInvoiceDate } from "@/lib/analytics";
 import { readDealers, readProducts, readSales } from "@/lib/data/mock-data";
 import { BadRequestError } from "@/lib/errors";
 import { geminiChat } from "@/lib/llm/chat";
+import { listReviews } from "@/lib/storage/price-reviews";
 import { functionResultStep, userStep, type ChatPort, type ChatStep } from "@/lib/llm/port";
 import { copilotInstructions, copilotUserText } from "@/lib/llm/prompts/copilot";
 
+import { checkClarification, CLARIFY_TOOL, clarifyDeclaration } from "./clarify";
 import { vocabularyOf } from "./filters";
 import { allowedNumbers, checkNumbers, hasDigit } from "./guard";
 import { executeTool, toolDeclarations } from "./tools";
+import { clarificationSentence } from "./wording";
 import {
   COPILOT_HISTORY_PAIRS,
   COPILOT_MAX_QUESTION_LENGTH,
   COPILOT_MAX_ROUNDS,
   COPILOT_MAX_TOOL_CALLS,
+  type Clarification,
   type CopilotAnswer,
   type CopilotData,
   type CopilotStep,
@@ -31,6 +35,9 @@ import {
  *   → another tool, or a sentence (at most COPILOT_MAX_ROUNDS rounds)
  *   → the number check → steps, tables and a sentence for the page
  *
+ * A vague question ("How are SSDs doing?") gets ask_clarification instead of
+ * a query: the app shows the readings the model picked, and nothing is queried.
+ *
  * The model never sees the datasets, only tool results, and every number the
  * page shows was computed by the tools.
  */
@@ -38,6 +45,10 @@ import {
 export const NO_TOOL_REFUSAL =
   "I can only answer from the sales, product and dealer data, and I did not look anything up for that. " +
   "Try asking about sales, products, dealers or states.";
+
+const CLARIFY_TITLE = "Ask what the question means";
+const CLARIFY_NOT_ALONE =
+  `${CLARIFY_TOOL} must be the only call, made before any query. Answer from the query results instead.`;
 
 const NO_QUERY =
   "I could not work out a query for that. Try naming what to measure and a brand, dealer, model or period.";
@@ -112,11 +123,9 @@ export async function askCopilot(
   const chat = deps.chat ?? geminiChat;
   const data: CopilotData =
     deps.data ??
-    (await Promise.all([readSales(), readProducts(), readDealers()]).then(([sales, products, dealers]) => ({
-      sales,
-      products,
-      dealers,
-    })));
+    (await Promise.all([readSales(), readProducts(), readDealers(), listReviews()]).then(
+      ([sales, products, dealers, reviews]) => ({ sales, products, dealers, reviews }),
+    ));
 
   const today = latestInvoiceDate(data.sales);
   const dataStart = earliestInvoiceDate(data.sales);
@@ -131,7 +140,7 @@ export async function askCopilot(
   }
 
   const instructions = copilotInstructions({ today, dataStart, vocabulary: vocabularyOf(data) });
-  const tools = toolDeclarations();
+  const tools = [...toolDeclarations(), clarifyDeclaration()];
   const earlier = history
     .slice(-COPILOT_HISTORY_PAIRS)
     .map((pair) => ({ question: clip(pair.question, COPILOT_MAX_QUESTION_LENGTH), answer: clip(pair.answer, 1000) }));
@@ -152,6 +161,7 @@ export async function askCopilot(
   let rounds = 0;
   let toolCalls = 0;
   let answered = false;
+  let clarification: Clarification | null = null;
   let inputTokens: number | undefined;
   let outputTokens: number | undefined;
 
@@ -168,8 +178,34 @@ export async function askCopilot(
       break;
     }
 
+    // A clarification counts only alone and before any query (spec §10). A bad one goes back
+    // to the model like bad arguments do, so it can fix it or query instead.
+    if (turn.calls.length === 1 && turn.calls[0].name === CLARIFY_TOOL && toolCalls === 0) {
+      const [call] = turn.calls;
+      const checked = checkClarification(call.arguments, q, data);
+      if (typeof checked !== "string") {
+        clarification = checked;
+        break;
+      }
+      steps.push({ tool: CLARIFY_TOOL, title: CLARIFY_TITLE, lines: [], args: call.arguments, ok: false, error: checked });
+      conversation.push(functionResultStep(call, { error: checked }));
+      continue;
+    }
+
     // Every call gets a result, even over the limit, because the model expects one per call.
     for (const call of turn.calls) {
+      if (call.name === CLARIFY_TOOL) {
+        steps.push({
+          tool: CLARIFY_TOOL,
+          title: CLARIFY_TITLE,
+          lines: [],
+          args: call.arguments,
+          ok: false,
+          error: CLARIFY_NOT_ALONE,
+        });
+        conversation.push(functionResultStep(call, { error: CLARIFY_NOT_ALONE }));
+        continue;
+      }
       if (toolCalls >= COPILOT_MAX_TOOL_CALLS) {
         conversation.push(
           functionResultStep(call, {
@@ -196,7 +232,10 @@ export async function askCopilot(
   let sentenceSource: SentenceSource;
   let guardNote: string | undefined;
 
-  if (results.length === 0) {
+  if (clarification) {
+    sentence = clarificationSentence(clarification.subject);
+    sentenceSource = "clarify";
+  } else if (results.length === 0) {
     if (!text) {
       sentence = NO_QUERY;
       sentenceSource = "refusal";
@@ -234,6 +273,7 @@ export async function askCopilot(
     sentence,
     sentenceSource,
     ...(guardNote ? { guardNote } : {}),
+    ...(clarification ? { clarification } : {}),
     meta: {
       model: chat.model,
       rounds,

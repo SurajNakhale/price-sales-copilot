@@ -12,6 +12,7 @@ import {
   COPILOT_MAX_QUESTION_LENGTH,
   type CopilotAnswer as Answer,
 } from "@/lib/copilot/types";
+import { historyText } from "@/lib/copilot/wording";
 import type { ApiError } from "@/lib/types";
 
 interface Entry {
@@ -45,7 +46,7 @@ export function CopilotChat({ suggestions, configured }: { suggestions: string[]
     const history = entries
       .filter((entry) => entry.answer)
       .slice(-COPILOT_HISTORY_PAIRS)
-      .map((entry) => ({ question: entry.question, answer: entry.answer!.sentence }));
+      .map((entry) => ({ question: entry.question, answer: historyText(entry.answer!) }));
 
     setEntries((current) => [...current, { id, question }]);
     setDraft("");
@@ -116,7 +117,7 @@ export function CopilotChat({ suggestions, configured }: { suggestions: string[]
               </p>
             </div>
             {entry.answer ? (
-              <CopilotAnswer answer={entry.answer} />
+              <CopilotAnswer answer={entry.answer} onAsk={ask} disabled={pending || !configured} />
             ) : entry.error ? (
               <Alert variant="destructive">
                 <AlertTitle>No answer</AlertTitle>

@@ -971,7 +971,12 @@ describe("what the browser loads", () => {
     return seen;
   }
 
-  for (const component of ["app/_components/DraftPanel.tsx", "app/_components/AddressNote.tsx"]) {
+  for (const component of [
+    "app/_components/DraftPanel.tsx",
+    "app/_components/AddressNote.tsx",
+    "app/_components/ReceivedFileCard.tsx",
+    "app/_components/CopilotChat.tsx",
+  ]) {
     test(`${component} reaches no server-only module`, () => {
       const files = [...reach(path.join(root, component))];
       const serverOnly = files.filter((file) => /^import "server-only";/m.test(fs.readFileSync(file, "utf8")));

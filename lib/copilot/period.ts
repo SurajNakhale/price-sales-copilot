@@ -1,7 +1,7 @@
 import { addDays } from "@/lib/analytics";
 import { formatDate } from "@/lib/format";
 
-import { type PeriodInput, type ResolvedPeriod, ToolArgumentError } from "./types";
+import { type PeriodInput, type QuarterNumbering, type ResolvedPeriod, ToolArgumentError } from "./types";
 
 /**
  * Turns the model's period ("last month", "last 90 days") into explicit dates.
@@ -35,6 +35,51 @@ function lastOfMonth(year: number, month: number): string {
   return new Date(Date.UTC(year, month, 0)).toISOString().slice(0, 10);
 }
 
+/** The first month (1–12) of the calendar quarter that contains `month`. */
+function quarterStartMonth(month: number): number {
+  return Math.floor((month - 1) / 3) * 3 + 1;
+}
+
+/** Moves a (year, month) by whole months. */
+function shiftMonth(year: number, month: number, by: number): [number, number] {
+  const index = year * 12 + (month - 1) + by;
+  return [Math.floor(index / 12), (index % 12) + 1];
+}
+
+/**
+ * The name of the quarter starting in (year, month), in the numbering asked for:
+ * "calendar Q3 2026" or "Q2 of financial year 2026-27".
+ */
+export function quarterName(year: number, month: number, numbering: QuarterNumbering): string {
+  if (numbering === "financial") {
+    const fyStart = month >= 4 ? year : year - 1;
+    const q = Math.floor((((month - 4 + 12) % 12)) / 3) + 1;
+    return `Q${q} of financial year ${fyStart}-${String(fyStart + 1).slice(2)}`;
+  }
+  return `calendar Q${Math.floor((month - 1) / 3) + 1} ${year}`;
+}
+
+/**
+ * The first (year, month) of a numbered quarter. For financial numbering the
+ * year is the one the financial year starts in (2026 for 2026-27). Without a
+ * year, the most recent such quarter that has begun by today.
+ */
+function numberedQuarterStart(
+  quarter: number,
+  year: number | undefined,
+  numbering: QuarterNumbering,
+  today: [number, number],
+): [number, number] {
+  const offset = numbering === "financial" ? 3 : 0; // financial Q1 starts in April
+  const startIn = (y: number) => shiftMonth(y, 1, offset + (quarter - 1) * 3);
+  if (year !== undefined) return startIn(year);
+  const [todayYear, todayMonth] = today;
+  const baseYear = numbering === "financial" && todayMonth < 4 ? todayYear - 1 : todayYear;
+  const [y, m] = startIn(baseYear);
+  const begun = y < todayYear || (y === todayYear && m <= todayMonth);
+  return begun ? [y, m] : startIn(baseYear - 1);
+}
+
 function spanDays(from: string, to: string): number {
   if (to < from) return 0;
   const ms = Date.parse(`${to}T00:00:00Z`) - Date.parse(`${from}T00:00:00Z`);
@@ -55,6 +100,7 @@ export function resolvePeriod(
 
   let from: string;
   let to: string;
+  let reading: string | undefined;
 
   switch (period.kind) {
     case "all":
@@ -115,6 +161,32 @@ export function resolvePeriod(
       break;
     }
 
+    case "this_quarter":
+    case "last_quarter":
+    case "quarter": {
+      const numbering: QuarterNumbering = period.numbering === "financial" ? "financial" : "calendar";
+      let start: [number, number];
+      if (period.kind === "quarter") {
+        const quarter = period.quarter;
+        if (quarter === undefined || !Number.isInteger(quarter) || quarter < 1 || quarter > 4) {
+          throw new ToolArgumentError('period.quarter must be 1 to 4 when kind is "quarter".');
+        }
+        if (period.year !== undefined && (!Number.isInteger(period.year) || period.year < 2000 || period.year > 2100)) {
+          throw new ToolArgumentError("period.year must be a four-digit year.");
+        }
+        start = numberedQuarterStart(quarter, period.year, numbering, [todayYear, todayMonth]);
+      } else {
+        // The months are the same in either numbering; only the name differs.
+        const current: [number, number] = [todayYear, quarterStartMonth(todayMonth)];
+        start = period.kind === "this_quarter" ? current : shiftMonth(current[0], current[1], -3);
+      }
+      const [endYear, endMonth] = shiftMonth(start[0], start[1], 2);
+      from = firstOfMonth(start[0], start[1]);
+      to = lastOfMonth(endYear, endMonth);
+      reading = quarterName(start[0], start[1], numbering);
+      break;
+    }
+
     default:
       throw new ToolArgumentError(`Unknown period kind "${String((period as { kind: unknown }).kind)}".`);
   }
@@ -147,6 +219,7 @@ export function resolvePeriod(
     from,
     to,
     label: from > to ? `${formatDate(from)} onwards` : `${formatDate(from)} – ${formatDate(to)}`,
+    ...(reading ? { reading } : {}),
     days,
     caveats,
   };

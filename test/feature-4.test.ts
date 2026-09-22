@@ -3,10 +3,12 @@ import fs from "node:fs";
 import path from "node:path";
 
 import { askCopilot, NO_TOOL_REFUSAL } from "@/lib/copilot/ask";
+import { checkClarification, CLARIFY_TOOL } from "@/lib/copilot/clarify";
 import { csvFilename, tableToCsv, tableToTsv } from "@/lib/copilot/export";
 import { resolveFilters } from "@/lib/copilot/filters";
 import { allowedNumbers, checkNumbers, numbersIn } from "@/lib/copilot/guard";
 import { resolvePeriod } from "@/lib/copilot/period";
+import { lookupPriceChanges } from "@/lib/copilot/price-changes";
 import { lookupProducts } from "@/lib/copilot/products";
 import { askBodySchema } from "@/lib/copilot/request";
 import { comparePeriods, querySales } from "@/lib/copilot/sales";
@@ -17,12 +19,13 @@ import {
   type CopilotData,
   ToolArgumentError,
 } from "@/lib/copilot/types";
+import { CLARIFY_SOURCE_NOTE, clarificationText, historyText, MEASURE_LABELS } from "@/lib/copilot/wording";
 import { BadRequestError, InvalidLlmOutputError, LlmUnavailableError } from "@/lib/errors";
 import { createGeminiChat, mapGeminiError, parseInteraction } from "@/lib/llm/chat";
 import { llmModel } from "@/lib/llm/client";
 import type { ChatPort, ChatStep, ChatTurnRequest, ChatTurnResult } from "@/lib/llm/port";
 import { toGeminiSchema } from "@/lib/llm/schemas";
-import type { Dealer, Product, SalesLine } from "@/lib/types";
+import type { Dealer, PriceChangeItem, PriceReview, Product, SalesLine } from "@/lib/types";
 
 // The datasets are read from the repo by path, not through lib/config.ts, whose
 // paths follow process.cwd() and are moved to temp folders by other test files.
@@ -85,6 +88,54 @@ describe("periods are resolved by code against today in the data", () => {
     expect(resolve({ kind: "month", month: 7 })).toMatchObject({ from: "2026-07-01", to: "2026-07-31", days: 31, caveats: [] });
   });
 
+  test("this quarter runs from 1 Jul to the last invoice, named in the numbering asked for", () => {
+    const p = resolve({ kind: "this_quarter" });
+    expect(p).toMatchObject({ from: "2026-07-01", to: TODAY, reading: "calendar Q3 2026" });
+    expect(p.caveats.join(" ")).toContain("not over");
+    // 1 Jul is one day before the first invoice: within the grace, so no data-start caveat.
+    expect(p.caveats.join(" ")).not.toContain("Sales data starts");
+    expect(resolve({ kind: "this_quarter", numbering: "financial" })).toMatchObject({
+      from: "2026-07-01",
+      reading: "Q2 of financial year 2026-27",
+    });
+  });
+
+  test("last quarter is April to June, before the data", () => {
+    const p = resolve({ kind: "last_quarter" });
+    expect(p).toMatchObject({ from: "2026-04-01", to: "2026-06-30", reading: "calendar Q2 2026", days: 0 });
+    expect(p.caveats.join(" ")).toContain("before the first sale");
+  });
+
+  test("a numbered quarter follows its numbering: calendar Q3 and financial Q2 are both Jul–Sep", () => {
+    expect(resolve({ kind: "quarter", quarter: 3 })).toMatchObject({ from: "2026-07-01", to: TODAY, reading: "calendar Q3 2026" });
+    expect(resolve({ kind: "quarter", quarter: 2, numbering: "financial" })).toMatchObject({
+      from: "2026-07-01",
+      to: TODAY,
+      reading: "Q2 of financial year 2026-27",
+    });
+    // Calendar Q2 is April to June; financial Q1 of 2026-27 too.
+    expect(resolve({ kind: "quarter", quarter: 2 })).toMatchObject({ from: "2026-04-01", to: "2026-06-30" });
+    expect(resolve({ kind: "quarter", quarter: 1, numbering: "financial", year: 2026 })).toMatchObject({
+      from: "2026-04-01",
+      reading: "Q1 of financial year 2026-27",
+    });
+  });
+
+  test("a quarter with no year is the most recent one begun", () => {
+    expect(resolve({ kind: "quarter", quarter: 4 })).toMatchObject({ from: "2025-10-01", to: "2025-12-31", reading: "calendar Q4 2025" });
+    expect(resolve({ kind: "quarter", quarter: 4, numbering: "financial" })).toMatchObject({
+      from: "2026-01-01",
+      to: "2026-03-31",
+      reading: "Q4 of financial year 2025-26",
+    });
+  });
+
+  test("bad quarters are errors the model can correct", () => {
+    expect(() => resolve({ kind: "quarter" })).toThrow(ToolArgumentError);
+    expect(() => resolve({ kind: "quarter", quarter: 5 })).toThrow(ToolArgumentError);
+    expect(() => resolve({ kind: "quarter", quarter: 2, year: 26 })).toThrow(ToolArgumentError);
+  });
+
   test("a month with no year means the most recent one", () => {
     expect(resolve({ kind: "month", month: 10 }).from).toBe("2025-10-01");
   });
@@ -142,6 +193,41 @@ describe("query_sales matches an independent calculation", () => {
     );
     expect(r.rows[0]).toMatchObject({ name: "990 PRO 2TB", revenue: 308_460, units: 16, revenueText: "₹3,08,460" });
     expect(r.totals).toMatchObject({ revenue: 1_865_150, units: 314 });
+  });
+
+  test("top 5 dealers this quarter, with the reading stated first", () => {
+    const run = executeTool("query_sales", { period: { kind: "this_quarter" }, groupBy: "dealer", sortBy: "revenue", limit: 5 }, data);
+    expect(run.step.lines[0]).toBe(
+      "Read as: revenue · by dealer, top 5 · all products · all dealers · this quarter (calendar Q3 2026).",
+    );
+    expect(run.step.lines[1]).toBe(
+      "Period: 1 Jul 2026 – 18 Sep 2026 (this quarter so far, calendar Q3 2026; today in the data is 18 Sep 2026).",
+    );
+    const expected = brute(between("2026-07-01", TODAY), (l) => l.dealer)
+      .sort((a, b) => b.revenue - a.revenue)
+      .slice(0, 5);
+    const r = run.step.result as { rows: { name: string; revenue: number }[]; period: { reading?: string } };
+    expect(r.rows.map((row) => [row.name, row.revenue])).toEqual(expected.map((row) => [row.name, row.revenue]));
+    expect(r.period.reading).toBe("calendar Q3 2026");
+  });
+
+  test("the Read-as line is written from the arguments for every data tool", () => {
+    const first = (name: string, args: Record<string, unknown>, d: CopilotData = data) => executeTool(name, args, d).step.lines[0];
+    expect(first("query_sales", { filters: { brands: ["samsung"], states: ["gujarat"] }, period: { kind: "quarter", quarter: 2, numbering: "financial" } })).toBe(
+      "Read as: total revenue and units · one total · products where brand is Samsung · dealers where state is Gujarat · Q2 of financial year 2026-27.",
+    );
+    expect(first("query_sales", { groupBy: "dealer", includeZero: true, sortBy: "units", order: "asc", limit: 3, period: { kind: "last_days", days: 90 } })).toBe(
+      "Read as: units · by dealer, bottom 3, with those that had none · all products · all dealers · the last 90 days (20 Jun 2026 – 18 Sep 2026).",
+    );
+    expect(first("compare_periods", { baseline: { kind: "last_quarter" }, comparison: { kind: "this_quarter" }, groupBy: "brand" })).toBe(
+      "Read as: revenue change · per brand · all products · all dealers · last quarter (calendar Q2 2026) against this quarter (calendar Q3 2026).",
+    );
+    expect(first("lookup_products", { filters: { categories: ["SSD"] }, status: "active" })).toBe(
+      "Read as: current prices, margins and status · products where category is SSD · active only · today's price list.",
+    );
+    expect(first("lookup_price_changes", {})).toBe(
+      "Read as: price changes, up or down · all products · approved lists only · no sales figures.",
+    );
   });
 
   test("ABC Computers in the last 90 days", () => {
@@ -262,7 +348,12 @@ describe("tool registry", () => {
       expect(JSON.stringify(schema)).not.toContain("$schema");
       expect(declaration.description.length).toBeGreaterThan(50);
     }
-    expect(TOOLS.map((tool) => tool.name)).toEqual(["query_sales", "compare_periods", "lookup_products"]);
+    expect(TOOLS.map((tool) => tool.name)).toEqual([
+      "query_sales",
+      "compare_periods",
+      "lookup_products",
+      "lookup_price_changes",
+    ]);
   });
 
   test("invalid arguments come back as an error the model can read", () => {
@@ -388,7 +479,13 @@ describe("askCopilot", () => {
     expect(instructions).toContain(TODAY);
     expect(instructions).toContain("ABC Computers");
     expect(instructions).not.toContain("@");
-    expect(tools.map((tool) => tool.name)).toEqual(["query_sales", "compare_periods", "lookup_products"]);
+    expect(tools.map((tool) => tool.name)).toEqual([
+      "query_sales",
+      "compare_periods",
+      "lookup_products",
+      "lookup_price_changes",
+      CLARIFY_TOOL,
+    ]);
   });
 
   test("a sentence with an invented number is replaced by one written from the results", async () => {
@@ -490,6 +587,397 @@ describe("askCopilot", () => {
 
 // ------------------------------------------------------ free-tier savers
 
+// ------------------------------------------------ price changes from approved lists
+
+/** A price-change item for a product in the data, with its current prices as the "old" ones. */
+function change(itemId: string, model: string, to: { dealerPrice?: number; mrp?: number }): PriceChangeItem {
+  const product = data.products.find((p) => p.model === model);
+  if (!product) throw new Error(`no product ${model}`);
+  const old = { dealerPrice: product.dealerPrice, mrp: product.mrp };
+  return {
+    kind: "price-change",
+    itemId,
+    productId: product.productId,
+    brand: product.brand,
+    model: product.model,
+    supplierModel: product.model,
+    match: "key",
+    old,
+    new: { dealerPrice: to.dealerPrice ?? old.dealerPrice, mrp: to.mrp ?? old.mrp },
+  } as PriceChangeItem;
+}
+
+function review(file: string, status: PriceReview["status"], items: PriceChangeItem[], applied?: string[], approvedAt?: string): PriceReview {
+  return {
+    fileId: file.slice(0, 12).padEnd(12, "0"),
+    sourceFile: file,
+    brand: items[0]?.brand ?? null,
+    status,
+    rowsInFile: 10,
+    unchanged: 5,
+    issues: 0,
+    items,
+    analysedAt: "2026-09-20T09:00:00.000Z",
+    ...(approvedAt ? { approvedAt } : {}),
+    ...(applied ? { applied } : {}),
+  };
+}
+
+// Seagate (approved): a cut, a rise, an MRP-only rise, and a cut the reviewer did not apply.
+// TP-Link (approved): a cut. Samsung (waiting for review) and a failed analysis are not counted.
+const REVIEWS: PriceReview[] = [
+  review(
+    "Seagate_Price_List.xlsx",
+    "approved",
+    [
+      change("s1", "FireCuda 530 1TB", { dealerPrice: 11400, mrp: 14900 }),
+      change("s2", "Barracuda 2TB", { dealerPrice: 4450 }),
+      change("s3", "IronWolf 4TB", { mrp: 11900 }),
+      change("s4", "One Touch 2TB", { dealerPrice: 5900 }),
+    ],
+    ["s1", "s2", "s3"],
+    "2026-09-20T10:00:00.000Z",
+  ),
+  review("TPLink_Price_List.xlsx", "approved", [change("t1", "TL-SG108", { dealerPrice: 1050, mrp: 1499 })], ["t1"], "2026-09-21T10:00:00.000Z"),
+  review("Samsung_Price_List.csv", "needs-review", [change("m1", "T7 1TB", { dealerPrice: 7000 }), change("m2", "T7 2TB", { dealerPrice: 12000 })]),
+  { ...review("Broken.xlsx", "failed", []), error: "unreadable" },
+];
+const withReviews: CopilotData = { ...data, reviews: REVIEWS };
+const augustUnits = (productId: string) => unitsOf(between("2026-08-01", "2026-08-31").filter((l) => l.productId === productId));
+const augustRevenue = (productId: string) => revenueOf(between("2026-08-01", "2026-08-31").filter((l) => l.productId === productId));
+
+describe("lookup_price_changes reads approved lists only", () => {
+  test("only changes applied from approved lists count; lists waiting for review are named", () => {
+    const r = lookupPriceChanges(withReviews, {});
+    expect(r.rows.map((row) => row.model).sort()).toEqual(["Barracuda 2TB", "FireCuda 530 1TB", "IronWolf 4TB", "TL-SG108"]);
+    expect(r.appliedPriceChanges).toBe(4);
+    expect(r.appliedByDirection).toEqual({ increase: 2, decrease: 2 });
+    expect(r.approvedLists).toEqual([
+      { file: "Seagate_Price_List.xlsx", brand: "Seagate", approvedOn: "2026-09-20", appliedPriceChanges: 3 },
+      { file: "TPLink_Price_List.xlsx", brand: "TP-Link", approvedOn: "2026-09-21", appliedPriceChanges: 1 },
+    ]);
+    expect(r.waitingForReview).toEqual([{ file: "Samsung_Price_List.csv", brand: "Samsung", priceChanges: 2 }]);
+    expect(r.salesPeriod).toBeNull();
+  });
+
+  test("cheaper means a lower dealer price, biggest cut first; an MRP-only change counts by the MRP", () => {
+    const down = lookupPriceChanges(withReviews, { direction: "decrease" });
+    expect(down.rows.map((row) => [row.model, row.dealerPriceChangePct])).toEqual([
+      ["TL-SG108", -4.5],
+      ["FireCuda 530 1TB", -3.4],
+    ]);
+    const up = lookupPriceChanges(withReviews, { direction: "increase" });
+    expect(up.rows.map((row) => [row.model, row.dealerPriceChangePct, row.mrpChangePct])).toEqual([
+      ["Barracuda 2TB", 3.5, 0],
+      ["IronWolf 4TB", 0, 3.5],
+    ]);
+    expect(up.rows[1].direction).toBe("increase");
+  });
+
+  test("brand, category and model filters use the same matching as the other tools", () => {
+    expect(lookupPriceChanges(withReviews, { filters: { brands: ["tplink"] } }).rows.map((r) => r.model)).toEqual(["TL-SG108"]);
+    expect(lookupPriceChanges(withReviews, { filters: { categories: ["HDD"] } }).rows.map((r) => r.model).sort()).toEqual([
+      "Barracuda 2TB",
+      "IronWolf 4TB",
+    ]);
+    expect(lookupPriceChanges(withReviews, { filters: { models: ["FireCuda"] } }).rows).toHaveLength(1);
+    const none = lookupPriceChanges(withReviews, { filters: { brands: ["Sony"] } });
+    expect(none.rows).toHaveLength(0);
+    expect(none.notes[0]).toContain('No brand matches "Sony"');
+  });
+
+  test("units and revenue for a period are joined by Product ID and match a brute-force sum", () => {
+    const r = lookupPriceChanges(withReviews, { direction: "decrease", salesPeriod: { kind: "last_month" } });
+    expect(r.salesPeriod).toMatchObject({ from: "2026-08-01", to: "2026-08-31" });
+    for (const row of r.rows) {
+      expect(row.units).toBe(augustUnits(row.productId));
+      expect(row.revenue).toBe(augustRevenue(row.productId));
+    }
+    expect(r.rows.every((row) => row.units !== undefined)).toBe(true);
+  });
+
+  test("with no reviews there is no change, and the result says no list has been approved", () => {
+    const r = lookupPriceChanges(data, { direction: "decrease" });
+    expect(r).toMatchObject({ matched: 0, appliedPriceChanges: 0, approvedLists: [], waitingForReview: [] });
+    expect(r.notes).toContain("No supplier price list has been approved yet, so no price has changed.");
+    expect(executeTool("lookup_price_changes", {}, data).template).toBe(
+      "No supplier price list has been approved yet, so no price has changed.",
+    );
+  });
+
+  test("steps, table and template sentence are written by code", () => {
+    const run = executeTool("lookup_price_changes", { direction: "decrease", salesPeriod: { kind: "last_month" } }, withReviews);
+    expect(run.step.ok).toBe(true);
+    expect(run.step.lines[0]).toBe(
+      "Read as: price cuts · all products · approved lists only · with units sold in last month (1 Aug 2026 – 31 Aug 2026).",
+    );
+    expect(run.step.lines[1]).toBe(
+      "Read 2 approved price lists (Seagate_Price_List.xlsx, approved 20 Sep 2026; TPLink_Price_List.xlsx, approved 21 Sep 2026): 4 applied price changes (2 up, 2 down).",
+    );
+    expect(run.step.lines).toContain("Kept changes where the price went down: 2 found.");
+    expect(run.step.lines).toContain("Not included, still waiting for review: Samsung_Price_List.csv (2 price changes).");
+    const table = run.step.table!;
+    expect(table.columns.map((c) => c.label)).toEqual([
+      "Model", "Brand", "Dealer price", "Change", "MRP", "List", "Approved", "Units sold", "Revenue",
+    ]);
+    expect(table.rows[0]).toMatchObject({ model: "TL-SG108", dealerPrice: "₹1,100 → ₹1,050", change: "↓ 4.5%", approved: "21 Sep 2026" });
+    expect(table.footnotes).toContain("Not included, waiting for review: Samsung_Price_List.csv.");
+    const tl = data.products.find((p) => p.model === "TL-SG108")!;
+    expect(run.template).toContain(`TL-SG108 ₹1,100 → ₹1,050, ${augustUnits(tl.productId)} sold`);
+    expect(run.template).toContain("1 list waiting for review is not included.");
+
+    const mrpOnly = executeTool("lookup_price_changes", { filters: { models: ["IronWolf 4TB"] } }, withReviews).step.table!;
+    expect(mrpOnly.rows[0]).toMatchObject({ dealerPrice: "₹8,900 (unchanged)", change: "MRP ↑ 3.5%", mrp: "₹11,500 → ₹11,900" });
+
+    // Only rises approved: asking for cuts says none went down.
+    const onlyUp: CopilotData = { ...data, reviews: [REVIEWS[0]] };
+    const cuts = executeTool("lookup_price_changes", { direction: "decrease", filters: { categories: ["HDD"] } }, onlyUp);
+    expect(cuts.template).toBe(
+      "No approved price change where category is HDD went down. The approved list (Seagate_Price_List.xlsx) applied 3 price changes (2 up, 1 down).",
+    );
+  });
+
+  test("no result carries an email address", () => {
+    const result = executeTool("lookup_price_changes", { salesPeriod: { kind: "all" } }, withReviews).modelResult;
+    expect(JSON.stringify(result)).not.toContain("@");
+  });
+
+  test("askCopilot reads the reviews it is given, and a changed review misses the cache", async () => {
+    const script = (turn: number) =>
+      turn % 2 === 1
+        ? call(`p${turn}`, "lookup_price_changes", { direction: "decrease", salesPeriod: { kind: "last_month" } })
+        : say("TL-SG108 went from ₹1,100 to ₹1,050.");
+    const { chat, requests } = fakeChat(script);
+    const cache = new Map();
+    const answer = await askCopilot("Which models got cheaper, and how many did we sell last month?", [], {
+      chat,
+      data: withReviews,
+      cache,
+    });
+    expect(answer.steps[0]).toMatchObject({ tool: "lookup_price_changes", ok: true });
+    expect(answer.sentenceSource).toBe("model");
+    await askCopilot("Which models got cheaper, and how many did we sell last month?", [], {
+      chat,
+      data: { ...withReviews, reviews: REVIEWS.slice(1) },
+      cache,
+    });
+    expect(requests).toHaveLength(4);
+  });
+
+  test("the instructions send price-change questions to the tool, not to 'cannot answer'", async () => {
+    const { chat, requests } = fakeChat(() => say("Hello."));
+    await askCopilot("hi", [], { chat, data, cache: null });
+    expect(requests[0].instructions).toContain("use lookup_price_changes");
+    expect(requests[0].instructions).toContain('"This quarter" is this_quarter');
+    expect(requests[0].instructions).toContain("make one query for the question as read");
+    expect(requests[0].instructions).not.toContain("There is no price history");
+  });
+});
+
+// ------------------------------------------------------------ vague questions (spec §10)
+
+const SSD_OPTIONS = [
+  { measure: "units", question: "How many SSDs did we sell last month?" },
+  { measure: "revenue", question: "What was our SSD revenue last month?" },
+  { measure: "dealers", question: "How many dealers bought SSDs in the last 90 days?" },
+  { measure: "prices", question: "What are the current SSD prices?" },
+];
+const SSD_CLARIFY = { subject: "SSDs", options: SSD_OPTIONS };
+
+function turnOf(...calls: { id: string; name: string; arguments: Record<string, unknown> }[]): ChatTurnResult {
+  return { steps: calls.map((c) => ({ type: "function_call", ...c })), calls, text: "", usage: {} };
+}
+
+describe("vague questions", () => {
+  test("a clarification runs no query, and every word but the examples is the app's", async () => {
+    const { chat, requests } = fakeChat(() => call("q1", CLARIFY_TOOL, SSD_CLARIFY));
+    const answer = await askCopilot("How are SSDs doing?", [], { chat, data, cache: null });
+
+    expect(requests).toHaveLength(1);
+    expect(answer.sentenceSource).toBe("clarify");
+    expect(answer.sentence).toBe("I'm not sure what you'd like to know about SSDs.");
+    expect(answer.steps).toEqual([]);
+    expect(answer.meta).toMatchObject({ rounds: 1, toolCalls: 0 });
+    expect(answer.clarification).toEqual({
+      subject: "SSDs",
+      options: [
+        { measure: "units", label: "Sales quantity", question: SSD_OPTIONS[0].question },
+        { measure: "revenue", label: "Revenue", question: SSD_OPTIONS[1].question },
+        { measure: "dealers", label: "Number of dealers", question: SSD_OPTIONS[2].question },
+        { measure: "prices", label: "Current prices", question: SSD_OPTIONS[3].question },
+      ],
+    });
+  });
+
+  test("the text left in the history carries the options, so a typed reply has context", async () => {
+    const { chat } = fakeChat(() => call("q1", CLARIFY_TOOL, SSD_CLARIFY));
+    const answer = await askCopilot("How are SSDs doing?", [], { chat, data, cache: null });
+    const text = historyText(answer);
+    expect(text).toBe(clarificationText(answer.clarification!));
+    expect(text).toBe(
+      "I'm not sure what you'd like to know about SSDs. Would you like to see: Sales quantity, Revenue, " +
+        'Number of dealers, Current prices? For example: "How many SSDs did we sell last month?"',
+    );
+    expect(historyText({ sentence: "Plain answer." })).toBe("Plain answer.");
+
+    // That text is what the next request sends as the earlier turn.
+    const next = fakeChat(() => say("Fine."));
+    await askCopilot("revenue", [{ question: "How are SSDs doing?", answer: text }], { chat: next.chat, data, cache: null });
+    expect(JSON.stringify(next.requests[0].history[0])).toContain("Would you like to see: Sales quantity, Revenue");
+  });
+
+  test("a clarification is cached like any answer", async () => {
+    const { chat, requests } = fakeChat(() => call("q1", CLARIFY_TOOL, SSD_CLARIFY));
+    const cache = new Map();
+    await askCopilot("How are SSDs doing?", [], { chat, data, cache });
+    const again = await askCopilot("how are SSDs doing", [], { chat, data, cache });
+    expect(requests).toHaveLength(1);
+    expect(again).toMatchObject({ sentenceSource: "clarify", meta: { cached: true } });
+    expect(again.clarification?.options).toHaveLength(4);
+  });
+
+  test("a subject that is not in the question goes back to the model, whose next turn is used", async () => {
+    const { chat, requests } = fakeChat((turn) =>
+      turn === 1
+        ? call("q1", CLARIFY_TOOL, { ...SSD_CLARIFY, subject: "Click here to win" })
+        : call("q2", CLARIFY_TOOL, SSD_CLARIFY),
+    );
+    const answer = await askCopilot("How are SSDs doing?", [], { chat, data, cache: null });
+    expect(JSON.stringify(requests[1].history.at(-1))).toContain("subject must be words from the question");
+    expect(answer.sentenceSource).toBe("clarify");
+    expect(answer.steps).toHaveLength(1);
+    expect(answer.steps[0]).toMatchObject({ tool: CLARIFY_TOOL, ok: false });
+    expect(answer.meta.rounds).toBe(2);
+  });
+
+  test("a clarification next to a query is rejected, and the query still runs", async () => {
+    const { chat, requests } = fakeChat((turn) =>
+      turn === 1
+        ? turnOf(
+            { id: "q", name: "query_sales", arguments: SAMSUNG_BY_DEALER },
+            { id: "c", name: CLARIFY_TOOL, arguments: SSD_CLARIFY },
+          )
+        : say("XYZ Electronics bought the most: 39 units."),
+    );
+    const answer = await askCopilot("How are SSDs doing?", [], { chat, data, cache: null });
+    expect(answer.clarification).toBeUndefined();
+    expect(answer.sentenceSource).toBe("model");
+    expect(answer.steps.map((step) => [step.tool, step.ok])).toEqual([
+      ["query_sales", true],
+      [CLARIFY_TOOL, false],
+    ]);
+    const results = requests[1].history.filter((step) => step.type === "function_result");
+    expect(results.map((step) => step.call_id)).toEqual(["q", "c"]);
+    expect(JSON.stringify(results[1])).toContain("must be the only call, made before any query");
+    expect(answer.meta.toolCalls).toBe(1);
+  });
+
+  test("a clarification after a query is rejected", async () => {
+    const { chat } = fakeChat((turn) =>
+      turn === 1
+        ? call("q1", "query_sales", SAMSUNG_BY_DEALER)
+        : turn === 2
+          ? call("q2", CLARIFY_TOOL, SSD_CLARIFY)
+          : say("XYZ Electronics bought the most: 39 units."),
+    );
+    const answer = await askCopilot("How are SSDs doing?", [], { chat, data, cache: null });
+    expect(answer.clarification).toBeUndefined();
+    expect(answer.steps.map((step) => [step.tool, step.ok])).toEqual([
+      ["query_sales", true],
+      [CLARIFY_TOOL, false],
+    ]);
+    expect(answer.sentenceSource).toBe("model");
+  });
+
+  test("a clarification that keeps failing ends as 'could not work out a query', not a guess", async () => {
+    const bad = { subject: "SSDs", options: [SSD_OPTIONS[0]] };
+    const { chat, requests } = fakeChat(() => call("q", CLARIFY_TOOL, bad));
+    const answer = await askCopilot("How are SSDs doing?", [], { chat, data, cache: null });
+    expect(requests).toHaveLength(COPILOT_MAX_ROUNDS);
+    expect(answer.sentenceSource).toBe("refusal");
+    expect(answer.clarification).toBeUndefined();
+    expect(answer.meta.toolCalls).toBe(0);
+  });
+
+  test("the checks: options, measures and example questions", () => {
+    const q = "How are SSDs doing?";
+    const check = (options: unknown[], subject = "SSDs") => checkClarification({ subject, options }, q);
+    const growth = { measure: "growth", question: "How did SSD sales change against the month before?" };
+    expect(typeof check(SSD_OPTIONS)).toBe("object");
+    expect(check([SSD_OPTIONS[0]])).toContain("options");
+    expect(check([...SSD_OPTIONS, growth])).toContain("options");
+    expect(check([SSD_OPTIONS[0], { measure: "stock", question: "How many SSDs are in stock right now?" }])).toContain(
+      "measure",
+    );
+    expect(check([SSD_OPTIONS[0], { measure: "units", question: "How many SSDs did we sell last week?" }])).toContain(
+      "appears twice",
+    );
+    expect(check([SSD_OPTIONS[0], { measure: "revenue", question: "What was SSD revenue\nlast month?" }])).toContain(
+      "one line",
+    );
+    expect(check([SSD_OPTIONS[0], { measure: "revenue", question: "Show SSD revenue for last month" }])).toContain(
+      'end with "?"',
+    );
+    expect(check([SSD_OPTIONS[0], { measure: "revenue", question: "What was **SSD** revenue last month?" }])).toContain(
+      "markdown",
+    );
+    // Whole words, any case: "ssds" is in the question; "SD" is only part of a word.
+    expect(typeof check(SSD_OPTIONS, "ssds")).toBe("object");
+    expect(check(SSD_OPTIONS, "SD")).toContain("subject must be words from the question");
+    expect(
+      typeof checkClarification({ subject: "abc  computers", options: SSD_OPTIONS }, "Tell me about ABC Computers"),
+    ).toBe("object");
+    // Gemini's nulls count as left out, as for the other tools.
+    expect(typeof checkClarification({ subject: "SSDs", options: SSD_OPTIONS, extra: null }, q)).toBe("object");
+  });
+
+  test("with the data, readings that cannot fit the subject go back to the model", () => {
+    const pick = (...measures: string[]) =>
+      measures.map((measure) => ({ measure, question: `What about the ${measure.replace("_", " ")} last month?` }));
+    const abc = (options: unknown[]) =>
+      checkClarification({ subject: "ABC Computers", options }, "Tell me about ABC Computers", data);
+    expect(abc(pick("revenue", "dealers"))).toBe(
+      '"ABC Computers" is a dealer, so dealers does not fit. Readings for a dealer: units, revenue, growth.',
+    );
+    expect(abc(pick("units", "price_changes"))).toContain("price_changes does not fit");
+    expect(typeof abc(pick("units", "revenue", "growth"))).toBe("object");
+    const state = checkClarification({ subject: "Gujarat", options: pick("revenue", "prices") }, "What about Gujarat?", data);
+    expect(state).toContain('"Gujarat" is a state, so prices does not fit');
+    const product = pick("dealers", "prices", "price_changes");
+    expect(typeof checkClarification({ subject: "SSDs", options: product }, "How are SSDs doing?", data)).toBe("object");
+    expect(typeof checkClarification({ subject: "Samsung", options: product }, "What about Samsung?", data)).toBe("object");
+    // A subject the data does not know is not restricted; without the data nothing is checked.
+    expect(typeof checkClarification({ subject: "gadgets", options: product }, "How are gadgets doing?", data)).toBe("object");
+    expect(
+      typeof checkClarification({ subject: "ABC Computers", options: pick("dealers", "units") }, "Tell me about ABC Computers"),
+    ).toBe("object");
+  });
+
+  test("the labels are the app's, one per measure, including price changes", () => {
+    expect(Object.keys(MEASURE_LABELS)).toEqual(["units", "revenue", "dealers", "prices", "price_changes", "growth"]);
+    expect(MEASURE_LABELS.price_changes).toBe("Price changes");
+    const withChanges = checkClarification(
+      { subject: "Samsung", options: [SSD_OPTIONS[1], { measure: "price_changes", question: "Which Samsung prices went up?" }] },
+      "What about Samsung?",
+    );
+    expect(typeof withChanges === "object" && withChanges.options[1].label).toBe("Price changes");
+    expect(CLARIFY_SOURCE_NOTE).toBe("No query was run: the question did not say what to measure.");
+  });
+
+  test("the instructions tell the model when to ask and when not to, and the tool converts for Gemini", async () => {
+    const { chat, requests } = fakeChat(() => say("Hello."));
+    await askCopilot("hi", [], { chat, data, cache: null });
+    const { instructions, tools } = requests[0];
+    expect(instructions).toContain("call ask_clarification, alone, instead of any query");
+    expect(instructions).toContain("How are SSDs doing?");
+    expect(instructions).toMatch(/Never call it when the question has a measure/);
+    const declared = tools.find((tool) => tool.name === CLARIFY_TOOL)!;
+    const schema = JSON.stringify(toGeminiSchema(declared.parameters));
+    expect(schema).toContain('"units"');
+    expect(schema).toContain('"prices"');
+  });
+});
+
 describe("saving Gemini requests", () => {
   const script = (turn: number) =>
     turn % 2 === 1 ? call(`c${turn}`, "query_sales", SAMSUNG_BY_DEALER) : say("XYZ Electronics bought 39 units.");
@@ -586,6 +1074,7 @@ describe("Gemini chat wrapper", () => {
       ["function", "query_sales", "object"],
       ["function", "compare_periods", "object"],
       ["function", "lookup_products", "object"],
+      ["function", "lookup_price_changes", "object"],
     ]);
   });
 

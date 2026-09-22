@@ -1,8 +1,7 @@
 # Feature 3 — Affected Dealers and a Gmail Draft
 
-**Status:** Implemented (2026-09-21). Planned with the user on 2026-09-21. Verified live up to the draft itself:
-affected dealers, a Gemini message and the permission redirect. Creating a real Gmail draft needs the user's consent
-click and has not been run yet (§11).
+**Status:** Implemented (2026-09-21). Planned with the user on 2026-09-21. Verified live end to end, including a real
+Gmail draft created on 21 Sep (§11).
 
 ## 1. Purpose and boundary
 
@@ -167,5 +166,7 @@ The stepper unlocks steps 4 and 5.
   a declined consent and a forged callback came back to the workflow page with the reason.
 - **Found by the build, not the tests:** the draft panel pulled server-only code into the browser. Fixed, and a test
   now follows the imports of the browser components.
-- **Not run:** the consent click and a real draft. Unverified until then: that Gmail keeps the Bcc on an
-  API-created draft, and the Open in Gmail link format.
+- **The draft itself** was created by the user from the page on 21 Sep 2026: Gmail returned a draft ID, and the record
+  holds 13 recipients and 13 addresses. Not yet checked from here: that Gmail kept the Bcc, and the Open in Gmail link
+  format. The connection has since gone back to read-only (a reconnect), so the page asks for the draft permission
+  again before another draft.

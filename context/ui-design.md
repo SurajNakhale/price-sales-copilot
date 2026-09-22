@@ -127,14 +127,58 @@ dashboard's "New price lists" card is the same component, limited to five rows.
 
 **Stepper labels as built** (`WorkflowStepper`), naming who acts in each step. Step 2 reads
 "LLM maps · app copies" rather than just "LLM", because the model only names the columns and the app
-copies every price. Steps 4–5 show a lock and "After approval" until the file is approved.
+copies every price. Steps 4–5 show a lock and "After approval" until the file is approved. Step 1 has its
+own card on the workflow page (§2.4a).
+
+### 2.4a Workflow step 1 — The file as received
+
+The downloaded `.csv` or `.xlsx` exactly as Feature 1 saved it, so the reviewer can see what the supplier
+sent. It is a card on the workflow page, directly under the stepper, not a drawer (decision 2), and it stays
+there at every step. It is **collapsed by default**, so the review below stays in view. It is not on the Price
+Updates list, where each row keeps its one action (§2.4).
+
+```text
+┌ The file as received ─────────────────────────── [⤓ Download original] [⌄ Show file] ┐
+│ Step 1 · Gmail · saved unchanged in mock-data/new-price-lists/                       │
+│ CSV · 11 rows · 4 columns · 330 B                                                    │
+│                                                                                      │
+│ (Show file)                                                                          │
+│ The analysis read this sheet. Row 1 is the header, and the labels under the letters   │
+│ show the columns the LLM mapped. The app copied each price from its cell.            │
+│       A            B                     C                  D                        │
+│       (Model)      (Category)     (Dealer price)          (MRP)                      │
+│   1   Model        Type        Dealer Price (INR)      MRP (INR)    ← plane ground    │
+│   2   T7 1TB       SSD                       7500          10499                     │
+└──────────────────────────────────────────────────────────────────────────────────────┘
+```
+
+As built (`ReceivedFileCard`):
+
+- **Header:** card title, a description beginning "Step 1 · Gmail", and two outline `sm` buttons. **Download
+  original** is a link (`nativeButton={false}`, §6) to `GET /api/prices/[id]/file`, which returns the saved bytes
+  untouched as an attachment. **Show file** / **Hide file** toggles the table.
+- **Summary line** (caption): the type, then rows, columns and size; for a workbook, the sheet name, or the number
+  of sheets with content. Sizes are formatted as in the scan dialog (`formatSize`).
+- **The table:** column letters A, B, C… in the label style and row numbers in a muted gutter, like a spreadsheet.
+  Cells are shown exactly as stored, with no ₹ formatting, because this is the raw file. A column whose filled
+  cells are mostly figures aligns right with `tabular-nums`, as every other number in the app does. A csv's
+  "7500" is text but counts as a figure. Long cells are cut at 320px, with the full text on hover. The table's own
+  container scrolls both ways inside a 480px height, so the letters stay in view.
+- **Once analysed**, from the stored column mapping, with no colour, since colour is kept for data and status (§5):
+  - The header row gets the plane ground.
+  - Each mapped column gets a neutral outline badge under its letter: Model, Category, Dealer price or MRP.
+  - A row the analysis skipped shows the word "skipped" in the gutter, with the reason in a tooltip.
+  - A line above the table repeats the §2.5 point that the LLM mapped the columns and the app copied the prices.
+- **Workbooks** with more than one sheet with content get `Tabs`, one per sheet. The sheet the analysis read says
+  "used for analysis" in words and opens first.
+- **Limits:** the first 500 rows of a sheet, then "Showing 500 of 1,832 rows · download the original to see all".
 
 ### 2.5 Workflow step 3 — Review & approve
 
 The heart of the app.
 
 - **Header:** breadcrumb, file name, status, received time and sender.
-- **Stepper:** steps 1–2 done, 3 current, 4–5 ahead.
+- **Stepper:** steps 1–2 done, 3 current, 4–5 ahead. The step 1 card (§2.4a) sits between the stepper and the review.
 - **Summary strip:** rows in file, changes, unchanged — plus the sentence that matters:
   *prices are copied from the file's cells by the app; the LLM only mapped this supplier's column names.*
 - **Tabs:** Price changes (3) · New products (1) · Missing products (1).
@@ -222,8 +266,9 @@ Suggested questions sit above the thread. The input is pinned at the bottom. A p
 
 **As built** (`CopilotChat`, `CopilotAnswer`):
 
-- **Steps** is a native `<details open>`, one entry per tool call. Each lists the sentences code wrote from the
-  arguments and the result ("Kept lines where brand is Samsung: 65 lines, 46 invoices, 10 products, 16 dealers"), and
+- **Steps** is a native `<details open>`, one entry per tool call. Each opens with a "Read as" line (metric ·
+  grouping · products · dealers · period, for example "this quarter (calendar Q3 2026)"), then lists the sentences
+  code wrote from the arguments and the result ("Kept lines where brand is Samsung: 65 lines, 46 invoices, 10 products, 16 dealers"), and
   a closed "Arguments the model sent" block with the raw JSON. A call the app rejected is badged **rejected** with the
   reason; the model was told and may have corrected itself in the next step.
 - **Tables**: one per successful call, titled in words ("Sales where brand is Samsung, 2 Jul 2026 – 18 Sep 2026, by
@@ -236,6 +281,23 @@ Suggested questions sit above the thread. The input is pinned at the bottom. A p
   raw files. The thread is not stored; reloading starts a new one. Follow-ups carry the last 3 answered pairs.
 - The copilot needs Gemini, not Gmail. Without `GEMINI_API_KEY` the page shows a setup notice and the input is
   disabled. The dashboard's floating button is a link to this page, not a side panel.
+- **Price changes** ("Which models got cheaper in the new lists?") come back as a table: model, brand, dealer price old
+  → new, the change with an arrow (↓ 3.4%, or "MRP ↑ 3.5%" when only the MRP moved), MRP, the list and its approval
+  date, plus units sold and revenue when the question asks about sales. A footnote names lists still waiting for review,
+  which are not counted.
+- **A query that finds nothing** shows its title and "Nothing matches." in place of the table, for every tool, rather
+  than column headings with nothing under them.
+- **A vague question** ("How are SSDs doing?") gets a clarification in place of the sentence, with no steps and no table.
+  The box keeps the sentence box's style and holds:
+  - "I'm not sure what you'd like to know about SSDs.", then "Would you like to see:";
+  - one row per reading: an outline `sm` button with the label (Sales quantity, Revenue, Number of dealers, Current
+    prices, Price changes, Growth vs the previous period) and its example question beside it in muted text. Clicking the button asks
+    that question, and it is disabled while another is pending, like the suggestions;
+  - "Or ask it your own way, for example: …", then the source line "No query was run: the question did not say what to
+    measure.".
+
+  A typed reply such as "revenue" works, because the clarification goes into the follow-up history with its options.
+  The feature spec, §10, has the rules.
 
 ---
 
@@ -258,10 +320,13 @@ Suggested questions sit above the thread. The input is pinned at the bottom. A p
 | No changes | list row, workflow page | Status `No changes` (grey), action **View**; the page says there is nothing to approve |
 | Out of date | workflow page | Destructive alert naming each outdated item, **Re-analyse**; Approve disabled |
 | Failed | list row, workflow page | Status `Failed` with the reason inline, action **Retry**; the page shows the full reason above the Retry button |
+| File missing | workflow page, step 1 | The manifest names a file that is not on disk. Destructive alert "File not found" in the step 1 card; Show file and Download original disabled |
+| Unreadable file | workflow page, step 1 | A file the parser cannot read, such as a corrupt `.xlsx`. Alert "This file cannot be shown" with the reason; Download original stays available |
 | Token expired | any API call | Alert: access expired, reconnect (7-day Testing-mode expiry) |
 | Nothing selected | Review footer | Summary reads "Nothing selected yet"; commit disabled |
 | Copilot thinking | Copilot | "Working out the steps…" |
 | Copilot cannot answer | Copilot | Says what it could not map, suggests a rephrase — never a guess |
+| Copilot needs clarification | Copilot | A vague question: "I'm not sure what you'd like to know about …", 2–4 readings as buttons that ask an example question, "No query was run" |
 
 ---
 

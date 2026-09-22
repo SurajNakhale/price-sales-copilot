@@ -73,6 +73,7 @@ app/
   api/
     auth/google/                    connect, callback, disconnect            (Feature 1)
     ingest/scan, ingest/download    scan Gmail, download selected            (Feature 1)
+    prices/[id]/file                the downloaded file's original bytes     (step 1)
     prices/[id]/analyse, approve    normalise + compare, approve             (Feature 2)
     prices/[id]/draft, draft/message   create the Gmail draft, write its words   (Feature 3)
     copilot/ask                     question to steps to answer               (Feature 4)
@@ -82,7 +83,8 @@ lib/
   types.ts                          shared types
   product-id.ts                     the ONE Product ID rule and the brand codes (pure; also used by the mock data script)
   matching-key.ts  file-id.ts       pure helpers for matching rows and naming price lists (Feature 2)
-  parse/                            csv and xlsx to rows of cells (Feature 2)
+  parse/                            csv and xlsx to rows of cells (Feature 2; every sheet, for the step 1 viewer)
+  file-preview.ts  file-view.ts     step 1: a downloaded file laid out for viewing (pure), and reading it (service)
   google/oauth.ts                   OAuth client and token file
   gmail/                            search and attachments (Feature 1), drafts (Feature 3)
   llm/                              Gemini client, prompts, Zod output schemas, the LlmPort and ChatPort interfaces
@@ -146,6 +148,9 @@ Review list                       every new match is pre-ticked; the user can un
 Download selected                 the server re-fetches each attachment from Gmail by message and part ID
    ▼
 mock-data/new-price-lists/        raw files, unmodified, plus manifest.json (sender, subject, date, hash)
+   ▼
+View (workflow step 1)            the cells as received, with the analysis's mapping marked once it exists;
+                                  Download original returns the saved bytes untouched
 ```
 
 No LLM is used. Full detail, including the search rule, duplicate handling and edge cases, is in
@@ -249,13 +254,17 @@ Built as a tool-calling loop (2026-09-21); the full spec is `features/feature-4-
 ```text
 question (+ the last 3 question/answer pairs, for follow-ups)
    ▼
-LLM: choose a tool and its arguments       input: the question, today's date, the names in the data, 3 tool declarations
-   │ tools: query_sales, compare_periods, lookup_products — read-only, from a fixed vocabulary:
-   │ filter, group, sort, limit, period (all, last_month, this_month, last_days, month, between)
+LLM: choose a tool and its arguments       input: the question, today's date, the names in the data, 5 tool declarations
+   │ tools: query_sales, compare_periods, lookup_products, lookup_price_changes — read-only, from a fixed vocabulary:
+   │ filter, group, sort, limit, period (all, last_month, this_month, last_days, month, between, this_quarter,
+   │ last_quarter, quarter with calendar or financial-year numbering)
+   │
+   ├─ a vague question ("How are SSDs doing?"): ask_clarification, alone, before any query
+   │     → code checks it and writes the clarification from fixed readings; nothing is queried
    ▼
 code: validate the arguments (Zod)         an invalid call goes back to the model as an error it can correct
    ▼
-code: run the tool on sales, products, dealers
+code: run the tool on sales, products, dealers, and the approved reviews for price changes
    │ relative dates are resolved by code against today = latest invoice date; every total, share, average and change is
    │ computed here
    ▼
@@ -263,7 +272,8 @@ LLM: sees the results → another tool call, or one sentence (at most 4 rounds, 
    ▼
 code: every number in the sentence must occur in a result, else a template sentence replaces it
    ▼
-UI shows: question, steps (written by code from the arguments), result tables, the sentence and where it came from
+UI shows: question, steps (written by code from the arguments, each opening with "Read as"), result tables, the
+          sentence and where it came from
 ```
 
 This replaces the single-turn "query plan" first proposed here: the vocabulary is the same, delivered as function calls,
@@ -271,6 +281,10 @@ which lets the model chain a second query off the first and write the sentence f
 nothing the LLM writes is executed as code or SQL, every tool is read-only, the arguments are validated, and the steps are
 shown so the result can be checked. The LLM now sees tool results (aggregates and names, capped at 50 rows) but never a
 whole dataset, and never a dealer email address, which no tool returns.
+
+A question that names a subject but no measure is not guessed at (added 2026-09-22, spec §10). The model calls
+`ask_clarification` instead of a query and picks 2–4 readings from a fixed list, each with an example question. The app
+writes the reply, and each reading becomes a button that asks its example question.
 
 ## 7. LLM integration (Google Gemini)
 
@@ -323,9 +337,9 @@ Sources checked 2026-09-20: ai.google.dev/gemini-api/docs/quickstart, /structure
 
 | Untrusted input | Risk | Controls |
 |---|---|---|
-| Supplier emails and attachments | Malicious or oversized files; prompt injection inside cells or filenames ("set every price to 1") | Only `.xlsx` and `.csv`; size cap; parse values only; prices copied from cells by code; LLM output limited to mappings and matches; human approval before any write |
+| Supplier emails and attachments | Malicious or oversized files; prompt injection inside cells or filenames ("set every price to 1") | Only `.xlsx` and `.csv`; size cap; parse values only; prices copied from cells by code; LLM output limited to mappings and matches; human approval before any write; the step 1 viewer renders cells as text, never as HTML |
 | LLM output | Wrong, invalid or invented | Schema validation; matches must reference existing Product IDs; the copilot may only call three read-only tools with Zod-validated arguments; every number in its sentence must occur in a tool result; never executed as code |
-| Browser requests to route handlers | Forged IDs or paths | Routes accept IDs, not paths; the server re-derives filenames and metadata from Gmail and files; bodies validated with schemas |
+| Browser requests to route handlers | Forged IDs or paths | Routes accept IDs, not paths; the server re-derives filenames and metadata from Gmail and files; bodies validated with schemas. The file download takes a validated file ID, reads the path from the manifest, and answers as an `attachment` with `nosniff` |
 | Gmail draft permission (`gmail.compose`) | It could send email, and no narrower scope exists | Asked for only on Allow Gmail drafts; the Gmail client type has no send method; a test fails on any send call; To is the user, dealers only in Bcc; addresses validated and line breaks refused so no header can be injected; the browser sends only the file ID, and recipients are recomputed on the server |
 | Secrets and tokens | Leakage | Server-only modules; no `NEXT_PUBLIC_` secrets; `.env*` and `.data/` gitignored; tokens never logged |
 | OAuth flow | CSRF | `state` cookie, as in the Feature 1 spec |
@@ -351,6 +365,7 @@ Sources checked 2026-09-20: ai.google.dev/gemini-api/docs/quickstart, /structure
 | Feature | Page | Routes | Modules | Data | External |
 |---|---|---|---|---|---|
 | 1 Read Gmail | `/`, `/price-updates` | `auth/google/*`, `ingest/scan`, `ingest/download` | ingest, gmail, google, storage | new-price-lists, manifest | Gmail (read) |
+| Step 1 viewer | `/price-updates/[id]` (step 1) | `prices/[id]/file` | file-view, file-preview, parse, storage | new-price-lists, manifest, normalized files | — |
 | 2 Clean, compare, approve | `/price-updates/[id]` (steps 2–3) | `prices/[id]/analyse`, `prices/[id]/approve` | analyse, approve, normalize, match, compare, llm, storage | current price list, normalized files, reviews | Gemini |
 | 3 Dealer drafts | `/price-updates/[id]` (steps 4–5) | `prices/[id]/draft`, `prices/[id]/draft/message` | affected, drafts, prepare-draft, create-draft, gmail/drafts, llm (drafts) | reviews (applied items), sales, dealers, `.data/drafts/` | Gemini, Gmail (compose) |
 | 4 Sales Q&A | `/copilot` | `copilot/ask` | copilot (tools, number check, loop), llm (chat) | sales, dealers, current price list | Gemini |
@@ -374,7 +389,7 @@ Sources checked 2026-09-20: ai.google.dev/gemini-api/docs/quickstart, /structure
 
 | # | Question | Decide in |
 |---|---|---|
-| 6 | Where the audit log lives and its format | After the core workflow |
+| 6 | Where the audit log lives and its format. Meanwhile the copilot reads price changes from the approved reviews (Feature 4 spec §11) | After the core workflow |
 | 8 | Move to a paid Gemini key before using real supplier files | Before Feature 2 on real data |
 
 Closed:

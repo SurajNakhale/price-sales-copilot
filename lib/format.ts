@@ -61,6 +61,14 @@ export function senderName(from: string): string {
   return (match?.[1] || from).trim();
 }
 
+/** "2 KB", "1.4 MB": attachment and file sizes. */
+export function formatSize(bytes: number): string {
+  if (!bytes) return EM_DASH;
+  if (bytes < 1024) return `${bytes} B`;
+  if (bytes < 1024 * 1024) return `${Math.round(bytes / 1024)} KB`;
+  return `${(bytes / 1024 / 1024).toFixed(1)} MB`;
+}
+
 /** Nothing to show yet, as opposed to a real zero. */
 export const EM_DASH = "—";
 

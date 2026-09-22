@@ -1,4 +1,4 @@
-import type { Dealer, Product, SalesLine } from "@/lib/types";
+import type { Dealer, PriceReview, Product, SalesLine } from "@/lib/types";
 
 /**
  * Shared types and limits for Feature 4. Pure, so the chat page can import the
@@ -19,6 +19,8 @@ export interface CopilotData {
   sales: SalesLine[];
   products: Product[];
   dealers: Dealer[];
+  /** Feature 2's reviews, for price changes from approved lists. Absent means none. */
+  reviews?: PriceReview[];
 }
 
 export interface Filters {
@@ -29,13 +31,29 @@ export interface Filters {
   states?: string[];
 }
 
-export type PeriodKind = "all" | "last_month" | "this_month" | "last_days" | "month" | "between";
+export type PeriodKind =
+  | "all"
+  | "last_month"
+  | "this_month"
+  | "last_days"
+  | "month"
+  | "between"
+  | "this_quarter"
+  | "last_quarter"
+  | "quarter";
+
+/** How quarters are numbered: calendar (Q1 = Jan–Mar) or the Indian financial year (Q1 = Apr–Jun). */
+export type QuarterNumbering = "calendar" | "financial";
 
 export interface PeriodInput {
   kind: PeriodKind;
   days?: number;
   year?: number;
   month?: number;
+  /** For kind quarter: 1–4, numbered as `numbering` says. */
+  quarter?: number;
+  /** For the quarter kinds. The model decides from the question; default calendar. */
+  numbering?: QuarterNumbering;
   from?: string;
   to?: string;
 }
@@ -45,6 +63,8 @@ export interface ResolvedPeriod {
   to: string;
   /** "1 Aug 2026 – 31 Aug 2026". */
   label: string;
+  /** How a quarter was read, e.g. "calendar Q3 2026". Only for the quarter kinds. */
+  reading?: string;
   days: number;
   caveats: string[];
 }
@@ -102,7 +122,19 @@ export interface CopilotStep {
   result?: unknown;
 }
 
-export type SentenceSource = "model" | "template" | "refusal" | "no_tool";
+export type SentenceSource = "model" | "template" | "refusal" | "no_tool" | "clarify";
+
+/** The readings a vague question can be given (spec §10). Labels are written by code, in wording.ts. */
+export const CLARIFY_MEASURES = ["units", "revenue", "dealers", "prices", "price_changes", "growth"] as const;
+export type ClarifyMeasure = (typeof CLARIFY_MEASURES)[number];
+
+/** The copilot asking what a vague question means, instead of querying. */
+export interface Clarification {
+  /** What the question is about, in the question's own words ("SSDs"). */
+  subject: string;
+  /** 2–4 readings, each with a complete question the user can ask by clicking it. */
+  options: { measure: ClarifyMeasure; label: string; question: string }[];
+}
 
 export interface CopilotAnswer {
   question: string;
@@ -111,6 +143,8 @@ export interface CopilotAnswer {
   sentenceSource: SentenceSource;
   /** Why the model's own sentence was not used, when it was not. */
   guardNote?: string;
+  /** Set when the question was too vague to query; `sentence` is then its first line. */
+  clarification?: Clarification;
   meta: {
     model: string;
     rounds: number;

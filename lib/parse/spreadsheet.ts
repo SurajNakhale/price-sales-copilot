@@ -12,19 +12,29 @@ import { parseCsv } from "./csv";
  * first sheet that has any content is used, and its name is recorded.
  */
 export async function parseSpreadsheet(filename: string, contents: Buffer): Promise<ParsedSheet> {
+  const sheets = await parseAllSheets(filename, contents);
+  return sheets.find((sheet) => sheet.rows.length > 0) ?? sheets[0] ?? { sheet: null, rows: [] };
+}
+
+/**
+ * Every sheet of a supplier file, for viewing it as received. A csv is one
+ * sheet with no name. A workbook's sheets with content come in their order;
+ * when none has any, the first empty one stands in, so the name still shows.
+ */
+export async function parseAllSheets(filename: string, contents: Buffer): Promise<ParsedSheet[]> {
   const lower = filename.toLowerCase();
 
   if (lower.endsWith(".csv")) {
-    return { sheet: null, rows: trimTrailingBlankRows(parseCsv(contents.toString("utf8"))) };
+    return [{ sheet: null, rows: trimTrailingBlankRows(parseCsv(contents.toString("utf8"))) }];
   }
 
   if (lower.endsWith(".xlsx")) {
-    const sheets = await readXlsxFile(contents);
-    for (const { sheet, data } of sheets) {
-      const rows = trimTrailingBlankRows(data.map((row) => row.map(toCell)));
-      if (rows.length > 0) return { sheet, rows };
-    }
-    return { sheet: sheets[0]?.sheet ?? null, rows: [] };
+    const sheets = (await readXlsxFile(contents)).map(({ sheet, data }) => ({
+      sheet,
+      rows: trimTrailingBlankRows(data.map((row) => row.map(toCell))),
+    }));
+    const withContent = sheets.filter((sheet) => sheet.rows.length > 0);
+    return withContent.length > 0 ? withContent : sheets.slice(0, 1);
   }
 
   throw new Error(`"${filename}" is not an .xlsx or .csv file.`);

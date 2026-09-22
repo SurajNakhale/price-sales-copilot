@@ -2,6 +2,12 @@ import * as z from "zod";
 
 import { formatDate, formatNumber } from "@/lib/format";
 
+import {
+  lookupPriceChanges,
+  PRICE_CHANGES_DEFAULT_LIMIT,
+  type PriceChangeRow,
+  type PriceChangesResult,
+} from "./price-changes";
 import { lookupProducts, type LookupProductsResult } from "./products";
 import {
   comparePeriods,
@@ -21,7 +27,7 @@ import {
 } from "./types";
 
 /**
- * The three tools the model may call, each defined once: the argument schema
+ * The four data tools the model may call, each defined once: the argument schema
  * (sent to Gemini and used to validate what comes back), the description the
  * model reads, the pure function that runs it, and three views of the result
  * written by code: the readable steps, the table, and a template sentence used
@@ -56,15 +62,31 @@ const productFiltersSchema = z
 const periodSchema = z
   .object({
     kind: z
-      .enum(["all", "last_month", "this_month", "last_days", "month", "between"])
+      .enum(["all", "last_month", "this_month", "last_days", "month", "between", "this_quarter", "last_quarter", "quarter"])
       .describe(
         "all = every sale; last_month = the previous calendar month; this_month = the current month so far; " +
           "last_days = the last N days (set days); month = one calendar month (set month, optionally year); " +
-          "between = explicit dates (set from and to).",
+          "between = explicit dates (set from and to); this_quarter = the current quarter so far; " +
+          "last_quarter = the previous quarter; quarter = a numbered quarter (set quarter and numbering, " +
+          "optionally year).",
       ),
     days: z.int().min(1).max(365).describe("For last_days: how many days back from today.").optional(),
     month: z.int().min(1).max(12).describe("For month: 1 = January … 12 = December.").optional(),
-    year: z.int().describe("For month: the year. Leave out for the most recent such month.").optional(),
+    year: z
+      .int()
+      .describe(
+        "For month or quarter: the year. For a financial-year quarter, the year the financial year starts " +
+          "(2026 for 2026-27). Leave out for the most recent one that has begun.",
+      )
+      .optional(),
+    quarter: z.int().min(1).max(4).describe("For quarter: 1 to 4, numbered as numbering says.").optional(),
+    numbering: z
+      .enum(["calendar", "financial"])
+      .describe(
+        "For the quarter kinds: calendar (Q1 = Jan–Mar) or financial, the Indian financial year (Q1 = Apr–Jun). " +
+          'Use financial when the question says "FY" or "financial year"; otherwise calendar.',
+      )
+      .optional(),
     from: z.string().describe("For between: first day, YYYY-MM-DD.").optional(),
     to: z.string().describe("For between: last day, YYYY-MM-DD.").optional(),
   })
@@ -128,6 +150,29 @@ export const lookupProductsSchema = z.object({
     .optional(),
 });
 
+export const lookupPriceChangesSchema = z.object({
+  direction: z
+    .enum(["decrease", "increase", "any"])
+    .describe(
+      "decrease = got cheaper, increase = got dearer. Judged on the dealer price, or on the MRP when only the MRP " +
+        "changed. Default any.",
+    )
+    .optional(),
+  filters: productFiltersSchema,
+  salesPeriod: periodSchema
+    .describe(
+      "Optional. Adds each changed product's units sold and revenue in this period, e.g. last_month for " +
+        '"how many did we sell last month". Leave out when sales are not asked about.',
+    )
+    .optional(),
+  limit: z
+    .int()
+    .min(1)
+    .max(COPILOT_MAX_ROWS)
+    .describe(`How many changes to return, 1 to ${COPILOT_MAX_ROWS}. Default ${PRICE_CHANGES_DEFAULT_LIMIT}.`)
+    .optional(),
+});
+
 // ---------------------------------------------------------- shared wording
 
 const PERIOD_PHRASE: Record<PeriodInput["kind"], string> = {
@@ -137,12 +182,50 @@ const PERIOD_PHRASE: Record<PeriodInput["kind"], string> = {
   last_days: "the last N days",
   month: "the month asked for",
   between: "the dates asked for",
+  this_quarter: "this quarter so far",
+  last_quarter: "last quarter",
+  quarter: "the quarter asked for",
 };
 
-function periodPhrase(period: PeriodInput | undefined, today: string): string {
+/** "this quarter so far, calendar Q3 2026; today in the data is 18 Sep 2026". */
+function periodPhrase(period: PeriodInput | undefined, today: string, reading?: string): string {
   const kind = period?.kind ?? "all";
   const phrase = kind === "last_days" ? `the last ${period?.days} days` : PERIOD_PHRASE[kind];
-  return `${phrase}; today in the data is ${formatDate(today)}`;
+  return `${phrase}${reading ? `, ${reading}` : ""}; today in the data is ${formatDate(today)}`;
+}
+
+// ------------------------------------------------------------- "Read as" lines
+
+/**
+ * How the model's arguments read, as one line at the top of each query step:
+ * the metric, the grouping, the products, the dealers and the period. Written
+ * by code from the arguments, so it cannot claim anything the query did not do.
+ */
+function readAs(parts: string[]): string {
+  return `Read as: ${parts.join(" · ")}.`;
+}
+
+/** Which products and which dealers the filters kept, from the tool's own filter phrases. */
+function scope(filters: string[]): { products: string; dealers: string } {
+  const products = filters.filter((f) => /^(brand|category|model) /.test(f));
+  const dealers = filters.filter((f) => /^(dealer|state) /.test(f));
+  return {
+    products: products.length === 0 ? "all products" : `products where ${products.join(" and ")}`,
+    dealers: dealers.length === 0 ? "all dealers" : `dealers where ${dealers.join(" and ")}`,
+  };
+}
+
+/** "this quarter (calendar Q3 2026)", "last month (1 Aug 2026 – 31 Aug 2026)". */
+function periodName(input: PeriodInput | undefined, resolved: { label: string; reading?: string }): string {
+  const kind = input?.kind ?? "all";
+  if (kind === "quarter") return resolved.reading ?? resolved.label;
+  if (kind === "this_quarter" || kind === "last_quarter") {
+    return `${kind === "this_quarter" ? "this quarter" : "last quarter"} (${resolved.reading ?? resolved.label})`;
+  }
+  if (kind === "month" || kind === "between") return resolved.label;
+  const name =
+    kind === "all" ? "all dates" : kind === "last_days" ? `the last ${input?.days} days` : kind === "last_month" ? "last month" : "this month";
+  return `${name} (${resolved.label})`;
 }
 
 function pctText(value: number | null): string {
@@ -205,6 +288,7 @@ function defineTool<A, R>(tool: ToolDefinition<A, R>): ToolDefinition<A, R> {
 type QueryArgs = z.infer<typeof querySalesSchema>;
 type CompareArgs = z.infer<typeof comparePeriodsSchema>;
 type LookupArgs = z.infer<typeof lookupProductsSchema>;
+type PriceChangesArgs = z.infer<typeof lookupPriceChangesSchema>;
 
 const querySalesTool = defineTool<QueryArgs, QuerySalesResult>({
   name: "query_sales",
@@ -218,7 +302,18 @@ const querySalesTool = defineTool<QueryArgs, QuerySalesResult>({
   schema: querySalesSchema,
   run: (data, args) => querySales(data, args),
   explain(args, r) {
-    const lines = [`Period: ${r.period.label} (${periodPhrase(args.period, r.today)}).`];
+    const { products, dealers } = scope(r.filters);
+    const ranked = r.sortBy !== "name" && r.sortBy !== "date";
+    const metric = r.groupBy === "none" ? "total revenue and units" : ranked ? SORT_WORD[r.sortBy] : "revenue and units";
+    const shape =
+      r.groupBy === "none"
+        ? "one total"
+        : `by ${r.groupBy}, ${ranked ? `${r.order === "asc" ? "bottom" : "top"} ${args.limit ?? 10}` : `in ${r.sortBy} order`}` +
+          (r.includeZero ? ", with those that had none" : "");
+    const lines = [
+      readAs([metric, shape, products, dealers, periodName(args.period, r.period)]),
+      `Period: ${r.period.label} (${periodPhrase(args.period, r.today, r.period.reading)}).`,
+    ];
     lines.push(
       r.filters.length === 0
         ? `No filters: all ${count(r.matched.lines, "invoice line")} in the period.`
@@ -363,8 +458,16 @@ const comparePeriodsTool = defineTool<CompareArgs, ComparePeriodsResult>({
   schema: comparePeriodsSchema,
   run: (data, args) => comparePeriods(data, args),
   explain(args, r) {
+    const { products, dealers } = scope(r.filters);
     const lines = [
-      `Baseline: ${r.baseline.label} (${periodPhrase(args.baseline, r.today)}).`,
+      readAs([
+        "revenue change",
+        r.groupBy === "none" ? "in total" : `per ${r.groupBy}`,
+        products,
+        dealers,
+        `${periodName(args.baseline, r.baseline)} against ${periodName(args.comparison, r.comparison)}`,
+      ]),
+      `Baseline: ${r.baseline.label} (${periodPhrase(args.baseline, r.today, r.baseline.reading)}).`,
       `Comparison: ${r.comparison.label}.`,
     ];
     if (r.filters.length > 0) lines.push(`Kept lines where ${r.filters.join(" and ")}.`);
@@ -458,15 +561,22 @@ const lookupProductsTool = defineTool<LookupArgs, LookupProductsResult>({
   description:
     "The current price list: each product's dealer price, MRP, margin (MRP minus dealer price, and as a percent), " +
     "active or discontinued status, units sold and last sale date. Use it for price and product questions. " +
-    "It holds today's prices only: there is no price history.",
+    "It holds today's prices only; for what changed, use lookup_price_changes.",
   schema: lookupProductsSchema,
   run: (data, args) => lookupProducts(data, args),
-  explain(_args, r) {
+  explain(args, r) {
     const where = r.filters.length === 0 ? "every product" : `products where ${r.filters.join(" and ")}`;
+    const status = args.status ?? "any";
     return [
+      readAs([
+        "current prices, margins and status",
+        scope(r.filters.filter((f) => !f.startsWith("status "))).products,
+        status === "any" ? "active and discontinued" : `${status} only`,
+        "today's price list",
+      ]),
       `Looked up ${where} in the current price list: ${r.matched} found${r.matched > r.shown ? `, showing ${r.shown}` : ""}.`,
       ...r.notes,
-      "Prices are today's. The app keeps no price history.",
+      "Prices are today's.",
     ];
   },
   table(r) {
@@ -510,12 +620,149 @@ const lookupProductsTool = defineTool<LookupArgs, LookupProductsResult>({
   },
 });
 
+/** "₹7,000 → ₹7,500", or "₹5,999 (unchanged)". */
+function fromTo(from: string, to: string, same: boolean): string {
+  return same ? `${to} (unchanged)` : `${from} → ${to}`;
+}
+
+/** "↑ 7.1%", "↓ 3.4%", or the MRP's change when the dealer price did not move. */
+function changeText(row: PriceChangeRow): string {
+  const arrow = (value: number) => `${value > 0 ? "↑" : "↓"} ${Math.abs(value)}%`;
+  if (row.dealerPriceChangePct !== 0) return arrow(row.dealerPriceChangePct);
+  if (row.mrpChangePct !== 0) return `MRP ${arrow(row.mrpChangePct)}`;
+  return "—";
+}
+
+/** "3 up, 1 down". */
+function upDown(r: PriceChangesResult): string {
+  return `${r.appliedByDirection.increase} up, ${r.appliedByDirection.decrease} down`;
+}
+
+function listNames(lists: { file: string }[]): string {
+  return lists.map((list) => list.file).join(", ");
+}
+
+const lookupPriceChangesTool = defineTool<PriceChangesArgs, PriceChangesResult>({
+  name: "lookup_price_changes",
+  title: "Look up price changes",
+  description:
+    "Price changes from the supplier price lists that were approved: each product's dealer price and MRP before " +
+    "and after, the change in percent, which list it came from and when that list was approved. Only changes " +
+    "applied on approval count; lists still waiting for review are named, not counted. Set salesPeriod to add " +
+    'units sold and revenue per changed product. Use it for "which prices went up or down", "what got cheaper in ' +
+    'the new lists", "which products had a price increase".',
+  schema: lookupPriceChangesSchema,
+  run: (data, args) => lookupPriceChanges(data, args),
+  explain(args, r) {
+    const lines: string[] = [
+      readAs([
+        r.direction === "decrease" ? "price cuts" : r.direction === "increase" ? "price rises" : "price changes, up or down",
+        scope(r.filters).products,
+        "approved lists only",
+        r.salesPeriod ? `with units sold in ${periodName(args.salesPeriod, r.salesPeriod)}` : "no sales figures",
+      ]),
+    ];
+    if (r.approvedLists.length === 0) {
+      lines.push("No supplier price list has been approved yet.");
+    } else {
+      const lists = r.approvedLists.map((list) => `${list.file}, approved ${formatDate(list.approvedOn)}`).join("; ");
+      lines.push(
+        `Read ${count(r.approvedLists.length, "approved price list")} (${lists}): ` +
+          `${count(r.appliedPriceChanges, "applied price change")} (${upDown(r)}).`,
+      );
+      const kept = r.filters.length === 0 ? "Kept every change" : `Kept changes where ${r.filters.join(" and ")}`;
+      lines.push(`${kept}: ${r.matched} found${r.matched > r.shown ? `, showing ${r.shown}` : ""}.`);
+    }
+    if (r.salesPeriod) lines.push(`Added units sold and revenue for each changed product, ${r.salesPeriod.label}.`);
+    lines.push(...r.notes, ...r.caveats);
+    if (r.waitingForReview.length > 0) {
+      lines.push(
+        `Not included, still waiting for review: ${r.waitingForReview
+          .map((list) => `${list.file} (${count(list.priceChanges, "price change")})`)
+          .join(", ")}.`,
+      );
+    }
+    lines.push("Only changes applied when a list was approved count.");
+    return lines;
+  },
+  table(r) {
+    const where = r.filters.length === 0 ? "" : `, ${r.filters.join(" and ")}`;
+    const sales = r.salesPeriod ? `, with sales ${r.salesPeriod.label}` : "";
+    const footnotes: string[] = [];
+    if (r.matched > r.shown) footnotes.push(`Showing ${r.shown} of ${r.matched} changes.`);
+    if (r.waitingForReview.length > 0) {
+      footnotes.push(`Not included, waiting for review: ${listNames(r.waitingForReview)}.`);
+    }
+    footnotes.push(...r.caveats);
+    return {
+      title: `Price changes from approved lists${where}${sales}`,
+      columns: [
+        { key: "model", label: "Model" },
+        { key: "brand", label: "Brand" },
+        { key: "dealerPrice", label: "Dealer price", numeric: true },
+        { key: "change", label: "Change", numeric: true },
+        { key: "mrp", label: "MRP", numeric: true },
+        { key: "list", label: "List" },
+        { key: "approved", label: "Approved" },
+        ...(r.salesPeriod
+          ? [
+              { key: "units", label: "Units sold", numeric: true },
+              { key: "revenue", label: "Revenue", numeric: true },
+            ]
+          : []),
+      ],
+      rows: r.rows.map((row) => ({
+        model: row.model,
+        brand: row.brand,
+        dealerPrice: fromTo(row.oldDealerPriceText, row.newDealerPriceText, row.oldDealerPrice === row.newDealerPrice),
+        change: changeText(row),
+        mrp: fromTo(row.oldMrpText, row.newMrpText, row.oldMrp === row.newMrp),
+        list: row.list,
+        approved: formatDate(row.approvedOn),
+        ...(r.salesPeriod ? { units: formatNumber(row.units ?? 0), revenue: row.revenueText ?? "" } : {}),
+      })),
+      footnotes,
+    };
+  },
+  summarise(r) {
+    const waiting =
+      r.waitingForReview.length > 0
+        ? ` ${count(r.waitingForReview.length, "list")} waiting for review ${r.waitingForReview.length === 1 ? "is" : "are"} not included.`
+        : "";
+    if (r.approvedLists.length === 0) return `No supplier price list has been approved yet, so no price has changed.${waiting}`;
+
+    // The filters start with the direction ("the price went down") when one was asked for.
+    const where = r.filters.length === 0 ? "" : ` where ${r.filters.join(" and ")}`;
+    if (r.matched === 0) {
+      const others = r.filters.filter((filter) => !filter.startsWith("the price went"));
+      const whereOthers = others.length === 0 ? "" : ` where ${others.join(" and ")}`;
+      const went = r.direction === "decrease" ? "went down" : r.direction === "increase" ? "went up" : "was found";
+      return (
+        `No approved price change${whereOthers} ${went}. ` +
+        `The approved ${r.approvedLists.length === 1 ? "list" : "lists"} (${listNames(r.approvedLists)}) applied ` +
+        `${count(r.appliedPriceChanges, "price change")} (${upDown(r)}).${waiting}`
+      );
+    }
+    const shown = r.rows.slice(0, 5).map((row) => {
+      const price =
+        row.oldDealerPrice !== row.newDealerPrice
+          ? `${row.oldDealerPriceText} → ${row.newDealerPriceText}`
+          : `MRP ${row.oldMrpText} → ${row.newMrpText}`;
+      const sold = r.salesPeriod ? `, ${formatNumber(row.units ?? 0)} sold` : "";
+      return `${row.model} ${price}${sold}`;
+    });
+    const more = r.matched > shown.length ? ` and ${r.matched - shown.length} more` : "";
+    const period = r.salesPeriod ? ` Units sold are for ${r.salesPeriod.label}.` : "";
+    return `${count(r.matched, "approved price change")}${where}: ${shown.join("; ")}${more}.${period}${waiting}`;
+  },
+});
+
 // ------------------------------------------------------------------ registry
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any -- each entry keeps its own argument and result types
 type AnyTool = ToolDefinition<any, any>;
 
-export const TOOLS: AnyTool[] = [querySalesTool, comparePeriodsTool, lookupProductsTool];
+export const TOOLS: AnyTool[] = [querySalesTool, comparePeriodsTool, lookupProductsTool, lookupPriceChangesTool];
 const BY_NAME = new Map(TOOLS.map((tool) => [tool.name, tool]));
 
 /** What the chat port declares to the model. */
@@ -524,7 +771,7 @@ export function toolDeclarations(): { name: string; description: string; paramet
 }
 
 /** Gemini sometimes sends null for an argument it means to leave out. */
-function dropNulls(value: unknown): unknown {
+export function dropNulls(value: unknown): unknown {
   if (Array.isArray(value)) return value.map(dropNulls);
   if (value === null || typeof value !== "object") return value;
   return Object.fromEntries(

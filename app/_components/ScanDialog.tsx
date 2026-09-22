@@ -25,18 +25,11 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { formatDate, senderName } from "@/lib/format";
+import { formatDate, formatSize, senderName } from "@/lib/format";
 import type { ApiError, Candidate, IngestReport } from "@/lib/types";
 
 function rowKey(row: { messageId: string; partId: string }): string {
   return `${row.messageId}\u0000${row.partId}`;
-}
-
-function formatSize(bytes: number): string {
-  if (!bytes) return "—";
-  if (bytes < 1024) return `${bytes} B`;
-  if (bytes < 1024 * 1024) return `${Math.round(bytes / 1024)} KB`;
-  return `${(bytes / 1024 / 1024).toFixed(1)} MB`;
 }
 
 /**
